@@ -199,9 +199,9 @@
       </group> <!-- lane_driving -->
 
       <!-- Customizable -->
-      <node pkg="path_to_trajectory" exec="path_to_trajectory_node" name="path_to_trajectory" output="screen">
-        <remap from="input" to="/planning/scenario_planning/lane_driving/behavior_planning/path_with_lane_id"/>
-        <remap from="output" to="/planning/scenario_planning/trajectory"/>
+      <node pkg="simple_trajectory_generator" exec="simple_trajectory_generator_node" name="simple_trajectory_generator" output="screen">
+            <param name="csv_path" value="$(find-pkg-share simple_trajectory_generator)/data/raceline_awsim_15km.csv"/>
+            <param name="z" value="43.0"/>
       </node>
 
     </group>
@@ -213,7 +213,7 @@
 
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
     <param name="use_external_target_vel" value="true"/>
-    <param name="external_target_vel" value="4.16667"/>
+    <param name="external_target_vel" value="10.0"/>
     <param name="lookahead_gain" value="0.5"/>
     <param name="lookahead_min_distance" value="3.5"/>
     <param name="speed_proportional_gain" value="1.0"/>
