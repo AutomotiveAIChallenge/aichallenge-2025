@@ -6,7 +6,7 @@
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
-    <let name="rviz_config" value="$(find-pkg-share aichallenge_system_launch)/config/autoware_micro.rviz"/>
+    <let name="rviz_config" value="$(find-pkg-share aichallenge_system_launch)/config/autoware_vehicle.rviz"/>
     <let name="rviz_config" value="$(find-pkg-share aichallenge_system_launch)/config/autoware.rviz" if="$(var simulation)"/>
     <arg name="rviz_config" default="$(var rviz_config_file)" description="rviz config"/>
 

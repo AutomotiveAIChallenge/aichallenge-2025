@@ -23,7 +23,7 @@ sudo ip link set multicast on lo
 sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 
 source /aichallenge/workspace/install/setup.bash
-rviz2 -d /aichallenge/workspace/src/aichallenge_system/aichallenge_system_launch/config/debug_sensing.rviz \
+rviz2 -d /aichallenge/workspace/src/aichallenge_system/aichallenge_system_launch/config/autoware_vehicle.rviz \
     -s /aichallenge/workspace/src/aichallenge_system/aichallenge_system_launch/config/fast.png \
     --ros-args --remap "${opts[@]}"
 # rviz2 -d /aichallenge/workspace/src/aichallenge_system/aichallenge_system_launch/config/debug_sensing.rviz

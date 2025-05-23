@@ -99,35 +99,9 @@
 
   </group>
 
-  <!-- Dummy Perception -->
-  <node pkg="dummy_perception_publisher" exec="empty_objects_publisher" name="empty_objects_publisher" output="screen">
-    <remap from="~/output/objects" to="/perception/object_recognition/objects"/>
-  </node>
-
   <!-- Planning -->
   <group>
     <push-ros-namespace namespace="planning"/>
-
-    <!-- mission_planning -->
-    <group>
-      <push-ros-namespace namespace="mission_planning"/>
-
-      <!-- mission_planner -->
-      <node pkg="mission_planner" exec="mission_planner" name="mission_planner" output="screen">
-        <remap from="input/modified_goal" to="/planning/scenario_planning/modified_goal"/>
-        <remap from="input/vector_map" to="/map/vector_map"/>
-        <!-- <remap from="/localization/kinematic_state" to="/awsim/ground_truth/localization/kinematic_state"/> -->
-        <remap from="debug/route_marker" to="/planning/mission_planning/route_marker"/>
-        <param from="$(find-pkg-share aichallenge_submit_launch)/config/planning/mission_planning/mission_planner/mission_planner.param.yaml"/>
-      </node>
-
-      <!-- goal_pose_visualizer -->
-      <node pkg="mission_planner" exec="goal_pose_visualizer" name="goal_pose_visualizer" output="screen">
-        <remap from="input/route" to="/planning/mission_planning/route"/>
-        <remap from="output/goal_pose" to="/planning/mission_planning/echo_back_goal_pose"/>
-      </node>
-
-    </group> <!-- mission_planning -->
 
     <!-- scenario_planning -->
     <group>
@@ -212,15 +186,6 @@
       <arg name="input_steering" value="/vehicle/status/steering_status"/>
       <arg name="output_actuation_cmd" value="/control/command/actuation_cmd"/>
     </include>
-  </group>
-
-  <!-- API -->
-  <group>
-    <!-- default_ad_api -->
-    <include file="$(find-pkg-share default_ad_api)/launch/default_ad_api.launch.py" />
-
-    <!-- ad_api_adaptors -->
-    <include file="$(find-pkg-share ad_api_adaptors)/launch/rviz_adaptors.launch.xml" />
   </group>
 
 </launch>
