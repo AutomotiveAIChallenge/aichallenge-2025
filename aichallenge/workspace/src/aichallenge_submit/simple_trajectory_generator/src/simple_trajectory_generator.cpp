@@ -30,8 +30,8 @@ class CSVToTrajectory : public rclcpp::Node
 public:
   CSVToTrajectory() : Node("csv_to_trajectory_node")
   {
-    const auto rv_qos = rclcpp::QoS(rclcpp::KeepLast(1)).durability_volatile().best_effort();
-    pub_ = this->create_publisher<Trajectory>("trajectory", rv_qos);
+    const auto rb_qos = rclcpp::QoS(rclcpp::KeepLast(1)).durability_volatile().best_effort();
+    pub_ = this->create_publisher<Trajectory>("trajectory", rb_qos);
 
     declare_parameter("csv_path", "");
     z_= declare_parameter<float>("z");
