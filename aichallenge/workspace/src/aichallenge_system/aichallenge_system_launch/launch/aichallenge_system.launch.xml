@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <arg name="rviz_config" default="$(find-pkg-share aichallenge_system_launch)/config/autoware_micro.rviz" description="rviz config"/>
     <arg name="simulation"/>
     <arg name="use_sim_time"/>
     <arg name="run_rviz"/>
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
+    <let name="rviz_config" value="$(find-pkg-share aichallenge_system_launch)/config/autoware_micro.rviz"/>
+    <let name="rviz_config" value="$(find-pkg-share aichallenge_system_launch)/config/autoware.rviz" if="$(var simulation)"/>
+    <arg name="rviz_config" default="$(var rviz_config_file)" description="rviz config"/>
+
     <log message="The arguments for aichallenge_system_launch."/>
     <log message=" - simulation: $(var simulation)"/>
     <log message=" - use_sim_time: $(var use_sim_time)"/>
     <log message=" - sensor_model: $(var sensor_model)"/>
     <log message=" - launch_vehicle_interface: $(var launch_vehicle_interface)"/>
+    <log message=" - rviz config: $(var rviz_config)"/>
 
     <!-- Main module of AI challenge 2025. -->
     <include file="$(find-pkg-share aichallenge_submit_launch)/launch/aichallenge_submit.launch.xml" >
@@ -24,7 +28,6 @@
     <!-- Visualization. -->
     <group if="$(var run_rviz)">
         <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_config) -s $(find-pkg-share aichallenge_system_launch)/rviz/image/autoware.png"/>
-        <node pkg="aichallenge_system_launch" exec="object_marker.py" output="screen"/>
     </group>
 
     <!-- Initial Pose -->
