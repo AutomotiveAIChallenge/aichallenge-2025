@@ -1,5 +1,4 @@
 #!/bin/bash
-AWSIM_DIRECTORY="/aichallenge/simulator/AWSIM"
 
 # Create a temporary file to store process IDs
 PID_FILE=$(mktemp)
