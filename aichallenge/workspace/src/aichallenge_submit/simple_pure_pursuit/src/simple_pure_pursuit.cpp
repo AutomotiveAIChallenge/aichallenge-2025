@@ -29,10 +29,11 @@ SimplePurePursuit::SimplePurePursuit()
   pub_raw_cmd_ = create_publisher<AckermannControlCommand>("output/raw_control_cmd", 1);
   pub_lookahead_point_ = create_publisher<PointStamped>("/control/debug/lookahead_point", 1);
 
+  const auto bv_qos = rclcpp::QoS(rclcpp::KeepLast(1)).durability_volatile().best_effort();
   sub_kinematics_ = create_subscription<Odometry>(
-    "input/kinematics", 1, [this](const Odometry::SharedPtr msg) { odometry_ = msg; });
+    "input/kinematics", bv_qos, [this](const Odometry::SharedPtr msg) { odometry_ = msg; });
   sub_trajectory_ = create_subscription<Trajectory>(
-    "input/trajectory", 1, [this](const Trajectory::SharedPtr msg) { trajectory_ = msg; });
+    "input/trajectory", bv_qos, [this](const Trajectory::SharedPtr msg) { trajectory_ = msg; });
 
   using namespace std::literals::chrono_literals;
   timer_ =
@@ -109,7 +110,7 @@ void SimplePurePursuit::onTimer()
     lookahead_point_msg.header.frame_id = "map";
     lookahead_point_msg.point.x = lookahead_point_x;
     lookahead_point_msg.point.y = lookahead_point_y;
-    lookahead_point_msg.point.z = 0;
+    lookahead_point_msg.point.z = closet_traj_point.pose.position.z;
     pub_lookahead_point_->publish(lookahead_point_msg);
 
     // calc steering angle for lateral control
