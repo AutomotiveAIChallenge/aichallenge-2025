@@ -33,30 +33,29 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Setup ROS environment
-        uses: ros-tooling/setup-ros@0.7.1
-        with:
-          required-ros-distributions: ${{ matrix.ros_distribution }}
-
       - name: Fix expired ROS GPG key
         run: |
-          # Remove old key and add new ROS signing key
+          # Remove old repository and keys
           sudo rm -f /etc/apt/sources.list.d/ros2-latest.list
+          sudo rm -f /etc/apt/sources.list.d/ros2.list
           sudo rm -f /usr/share/keyrings/ros-archive-keyring.gpg
           sudo rm -f /etc/apt/keyrings/ros-archive-keyring.gpg
           
           # Download and install new key
-          curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /tmp/ros.key
-          echo "f42a4c01ae2e42b3ee1465f69281737d88c7d896e37b8e9779eb9c96dab8ee44 /tmp/ros.key" | sha256sum -c -
-          gpg --no-default-keyring --keyring=/tmp/ros-keyring.gpg --import /tmp/ros.key
-          gpg --no-default-keyring --keyring=/tmp/ros-keyring.gpg --export > /tmp/ros-archive-keyring.gpg
-          sudo mv /tmp/ros-archive-keyring.gpg /usr/share/keyrings/
+          wget https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+          sudo apt-key add ros.key
+          rm ros.key
           
-          # Update sources list with new key location
-          echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          # Add ROS 2 repository
+          echo "deb http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list
           
           # Update package list
           sudo apt-get update
+
+      - name: Setup ROS environment
+        uses: ros-tooling/setup-ros@0.7.1
+        with:
+          required-ros-distributions: ${{ matrix.ros_distribution }}
 
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.3.6
