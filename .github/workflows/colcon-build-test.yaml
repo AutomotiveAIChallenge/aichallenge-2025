@@ -23,17 +23,6 @@ jobs:
       image: ${{ matrix.docker_image }}
 
     steps:
-      - name: ROS signing key workaround
-        run: |
-          sudo rm /etc/apt/sources.list.d/ros2-latest.list
-          sudo rm /usr/share/keyrings/ros2-latest-archive-keyring.gpg
-          sudo apt update && sudo apt install -y curl ca-certificates
-          export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') ;\
-              curl -L -s -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $VERSION_CODENAME)_all.deb" \
-              && sudo apt-get update \
-              && sudo apt-get install /tmp/ros2-apt-source.deb \
-              && sudo rm -f /tmp/ros2-apt-source.deb
-
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.12.1
         with:
@@ -48,6 +37,26 @@ jobs:
         uses: ros-tooling/setup-ros@0.7.1
         with:
           required-ros-distributions: ${{ matrix.ros_distribution }}
+
+      - name: Fix expired ROS GPG key
+        run: |
+          # Remove old key and add new ROS signing key
+          sudo rm -f /etc/apt/sources.list.d/ros2-latest.list
+          sudo rm -f /usr/share/keyrings/ros-archive-keyring.gpg
+          sudo rm -f /etc/apt/keyrings/ros-archive-keyring.gpg
+          
+          # Download and install new key
+          curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /tmp/ros.key
+          echo "f42a4c01ae2e42b3ee1465f69281737d88c7d896e37b8e9779eb9c96dab8ee44 /tmp/ros.key" | sha256sum -c -
+          gpg --no-default-keyring --keyring=/tmp/ros-keyring.gpg --import /tmp/ros.key
+          gpg --no-default-keyring --keyring=/tmp/ros-keyring.gpg --export > /tmp/ros-archive-keyring.gpg
+          sudo mv /tmp/ros-archive-keyring.gpg /usr/share/keyrings/
+          
+          # Update sources list with new key location
+          echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          
+          # Update package list
+          sudo apt-get update
 
       - name: build and test
         uses: ros-tooling/action-ros-ci@0.3.6
