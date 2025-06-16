@@ -86,7 +86,7 @@ class Analyzer:
         self.input_bag_dir = input_dir
         self.folder_name = output_dir
         self.window_size = 10
-        self.file_name = "planning_performance.png"
+        self.file_name = "motion_analytics.png"
 
     def _read_bag_data(self):
         reader = create_reader(self.input_bag_dir)
