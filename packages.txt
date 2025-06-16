@@ -1,0 +1,9 @@
+libgl1-mesa-glx
+libgl1-mesa-dri
+iproute2
+wmctrl
+ros-humble-rqt-tf-tree
+ros-humble-rqt-graph
+zenoh-bridge-ros2dds
+terminator
+arp-scan

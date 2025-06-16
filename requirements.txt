@@ -1,0 +1,8 @@
+cvxpy
+numpy==1.26.4
+matplotlib
+scipy
+ecos
+pandas
+plotly
+kaleido

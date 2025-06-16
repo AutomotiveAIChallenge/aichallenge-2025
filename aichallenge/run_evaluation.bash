@@ -104,6 +104,10 @@ cleanup() {
     # Compress rosbag
     echo "Compress rosbag"
     if [ -d "rosbag2_autoware" ]; then
+        # Postprocess result
+        echo "Postprocess result"
+        python3 /aichallenge/workspace/src/aichallenge_system/script/motion_analytics.py --input rosbag2_autoware --output .
+        sleep 3
         tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
         rm -rf rosbag2_autoware
     fi
@@ -205,7 +209,7 @@ wait "$PID_AWSIM"
 # Stop recording rviz2
 echo "Stop screen capture"
 bash /aichallenge/publish.bash screen
-sleep 10
+sleep 3
 
 # Convert result
 echo "Convert result"
