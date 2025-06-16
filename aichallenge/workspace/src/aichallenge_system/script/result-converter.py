@@ -50,7 +50,7 @@ with open(args.input) as fp:
 summary = {
     "laps": create_laps(details),
     "min_time": create_min_time(details),
-    "max_jerk": create_max_jerk(details, dt, ws),
+    #"max_jerk": create_max_jerk(details, dt, ws),
 }
 
 with open(args.output, "w") as fp:
