@@ -7,3 +7,5 @@ ros-humble-rqt-graph
 zenoh-bridge-ros2dds
 terminator
 arp-scan
+libvulkan1
+vulkan-utils

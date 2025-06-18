@@ -7,6 +7,9 @@ case "${mode}" in
 "endless")
     opts=("--endless")
     ;;
+"cpu")
+    opts=("-nographics -batchmode -force-vulkan")
+    ;;
 *)
     opts=("")
     ;;
