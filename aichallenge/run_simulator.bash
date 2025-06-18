@@ -15,8 +15,7 @@ case "${mode}" in
 "endless")
     opts+=(" --endless")
     ;;
-*)
-    ;;
+*) ;;
 esac
 
 # shellcheck disable=SC1091
