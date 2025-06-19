@@ -164,16 +164,6 @@ echo "$PID_AUTOWARE" >>"$PID_FILE"
 get_child_pids "$PID_AUTOWARE"
 sleep 3
 
-# Start recording rosbag with nohup
-echo "Start rosbag"
-nohup ros2 bag record -a -o rosbag2_autoware >/dev/null 2>&1 &
-PID_ROSBAG=$!
-echo "ROS Bag PID: $PID_ROSBAG"
-echo "$PID_ROSBAG" >>"$PID_FILE"
-# recursively get child processes
-get_child_pids "$PID_ROSBAG"
-sleep 5
-
 # run updater
 (
     while true; do
@@ -202,6 +192,15 @@ wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
 wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
 
 bash /aichallenge/publish.bash all
+
+# Start recording rosbag with nohup
+echo "Start rosbag"
+nohup ros2 bag record -a -o rosbag2_autoware >/dev/null 2>&1 &
+PID_ROSBAG=$!
+echo "ROS Bag PID: $PID_ROSBAG"
+echo "$PID_ROSBAG" >>"$PID_FILE"
+# recursively get child processes
+get_child_pids "$PID_ROSBAG"
 
 # Wait for AWSIM to finish (this is the main process we're waiting for)
 wait "$PID_AWSIM"
