@@ -1,1 +1,6 @@
 *details.json
+/log
+*.log
+*.webm
+*.db3
+rosbag2*/
