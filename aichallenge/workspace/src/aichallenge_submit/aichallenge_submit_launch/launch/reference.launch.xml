@@ -110,18 +110,16 @@
 
   <!-- Planning -->
   <group>
-    <push-ros-namespace namespace="planning"/>
+    <!-- Waiting fix editor... -->
+    <!-- <push-ros-namespace namespace="planning"/> -->
 
-    <!-- scenario_planning -->
     <group>
-      <push-ros-namespace namespace="scenario_planning"/>
-
       <!-- Customizable -->
-      <node pkg="simple_trajectory_generator" exec="simple_trajectory_generator_node" name="simple_trajectory_generator" output="screen">
-            <param name="csv_path" value="$(find-pkg-share simple_trajectory_generator)/data/raceline_awsim_15km.csv"/>
-            <param name="z" value="6.5"/>
+      <node pkg="editor_tool_server" exec="interactive_server" output="screen" name="editor_tool_server">
+        <param name="csv_file_path" value="/aichallenge/workspace/src/aichallenge-trajectory-editor/csv/centerline_15km.csv"/>
+        <param name="publish_on_initialize" value="true"/>
+        <param name="wait_seconds" value="5.0"/>
       </node>
-      
     </group>
   </group>
 
