@@ -74,11 +74,11 @@ initial)
     set_initial_pose
     ;;
 all)
-    capture_screen
-    sleep 1
     set_initial_pose
     sleep 1
     request_control
+    capture_screen
+    sleep 1
     ;;
 help)
     usage

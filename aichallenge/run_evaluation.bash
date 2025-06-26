@@ -77,7 +77,7 @@ cleanup() {
     # Stop recording rosbag
     echo "Stop rosbag"
     if [[ -n $PID_ROSBAG ]] && kill -0 "$PID_ROSBAG" 2>/dev/null; then
-        graceful_shutdown "$PID_ROSBAG" 15
+        graceful_shutdown "$PID_ROSBAG" 3
     fi
 
     # shutdown ROS2 nodes
@@ -87,18 +87,17 @@ cleanup() {
         ros2 lifecycle set "$node" shutdown 2>/dev/null || true
         ros2 node kill "$node" 2>/dev/null || true
     done
-    sleep 1
 
     # Stop Autoware
     echo "Stop Autoware"
     if [[ -n $PID_AUTOWARE ]] && kill -0 "$PID_AUTOWARE" 2>/dev/null; then
-        graceful_shutdown "$PID_AUTOWARE" 20
+        graceful_shutdown "$PID_AUTOWARE" 3
     fi
 
     # Stop AWSIM
     echo "Stop AWSIM"
     if [[ -n $PID_AWSIM ]] && kill -0 "$PID_AWSIM" 2>/dev/null; then
-        graceful_shutdown "$PID_AWSIM" 10
+        graceful_shutdown "$PID_AWSIM" 3
     fi
 
     # Compress rosbag
@@ -107,7 +106,6 @@ cleanup() {
         # Postprocess result
         echo "Postprocess result"
         python3 /aichallenge/workspace/src/aichallenge_system/script/motion_analytics.py --input rosbag2_autoware --output .
-        sleep 3
         tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
         rm -rf rosbag2_autoware
     fi
@@ -118,7 +116,7 @@ cleanup() {
         while read -r pid; do
             if kill -0 "$pid" 2>/dev/null; then
                 echo "Attempting graceful shutdown of remaining PID $pid"
-                graceful_shutdown "$pid" 30
+                graceful_shutdown "$pid" 3
             fi
         done <"$PID_FILE"
         rm "$PID_FILE"
