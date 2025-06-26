@@ -2,6 +2,15 @@
 FROM ghcr.io/automotiveaichallenge/autoware-universe:humble-latest AS common
 
 RUN echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | tee -a /etc/apt/sources.list > /dev/null && apt-get update
+# update gpg key
+RUN rm -f /etc/apt/sources.list.d/ros2.list \
+    && rm -f /usr/share/keyrings/ros-archive-keyring.gpg \
+    && apt-get update
+RUN export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') \
+  && curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.jammy_all.deb" \
+  && dpkg -i /tmp/ros2-apt-source.deb
+RUN apt update
+
 COPY packages.txt /tmp/packages.txt
 RUN xargs -a /tmp/packages.txt apt-get install -y --no-install-recommends
 
