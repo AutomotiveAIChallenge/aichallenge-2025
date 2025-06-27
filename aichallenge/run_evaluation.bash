@@ -180,14 +180,16 @@ PID_UPDATER=$!
 echo "$PID_UPDATER" >>"$PID_FILE"
 
 # Start recording rviz2
-echo "Start screen capture"
+echo "Check if screen capture is ready"
 until (ros2 service type /debug/service/capture_screen >/dev/null); do
     sleep 5
+    echo "Check if screen capture is not ready"
 done
 
 # Move windows
 wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
 wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
+
 
 bash /aichallenge/publish.bash all
 

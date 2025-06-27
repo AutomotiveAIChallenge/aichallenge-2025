@@ -74,6 +74,7 @@ initial)
     set_initial_pose
     ;;
 all)
+    sleep 13
     set_initial_pose
     sleep 1
     request_control
