@@ -190,7 +190,6 @@ done
 wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
 wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
 
-
 bash /aichallenge/publish.bash all
 
 # Start recording rosbag with nohup
