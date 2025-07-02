@@ -74,9 +74,9 @@ initial)
     set_initial_pose
     ;;
 all)
-    while ! timeout 2s ros2 topic echo /clock 2>/dev/null | grep -q "sec:"; do
+    while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
         sleep 0.5
-        echo "Waiting for /clock topic to be available..."
+        echo "Waiting for /awsim/control_cmd topic to be available..."
     done
     sleep 1
     echo "System is ready, executing publish commands..."
