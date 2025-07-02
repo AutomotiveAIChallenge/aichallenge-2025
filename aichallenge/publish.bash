@@ -74,7 +74,12 @@ initial)
     set_initial_pose
     ;;
 all)
-    sleep 13
+    while ! timeout 1s ros2 topic echo /clock 2>/dev/null | grep -q "sec:"; do
+        sleep 0.5
+        echo "Waiting for /clock topic to be available..."
+    done
+    sleep 1
+    echo "System is ready, executing publish commands..."
     set_initial_pose
     sleep 1
     request_control
