@@ -116,7 +116,7 @@
     <group>
       <!-- Customizable -->
       <node pkg="editor_tool_server" exec="interactive_server" output="screen" name="editor_tool_server">
-        <param name="csv_file_path" value="/aichallenge/workspace/src/aichallenge-trajectory-editor/csv/centerline_15km.csv"/>
+        <param name="csv_file_path" value="/aichallenge/workspace/src/aichallenge-trajectory-editor/csv/raceline_base_15km.csv"/>
         <param name="publish_on_initialize" value="true"/>
         <param name="wait_seconds" value="5.0"/>
       </node>
