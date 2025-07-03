@@ -55,6 +55,25 @@ set_initial_pose() {
       }
     }" >/dev/null
     echo "Initial pose set successfully"
+    sleep 1
+}
+
+check_awsim() {
+    while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
+        sleep 0.5
+        echo "Waiting for /awsim/control_cmd topic to be available..."
+    done
+    sleep 1
+    echo "System is ready, executing publish commands..."
+}
+
+check_capture() {
+    # Start recording rviz2
+    echo "Check if screen capture is ready"
+    until (ros2 service type /debug/service/capture_screen >/dev/null); do
+        sleep 5
+        echo "Check if screen capture is not ready"
+    done
 }
 
 # Check if an argument was provided
@@ -64,6 +83,10 @@ fi
 
 # Process based on provided argument
 case "$1" in
+check)
+    check_capture
+    check_awsim
+    ;;
 screen)
     capture_screen
     ;;
@@ -74,17 +97,9 @@ initial)
     set_initial_pose
     ;;
 all)
-    while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
-        sleep 0.5
-        echo "Waiting for /awsim/control_cmd topic to be available..."
-    done
-    sleep 1
-    echo "System is ready, executing publish commands..."
+    sleep 5
     set_initial_pose
-    sleep 1
     request_control
-    capture_screen
-    sleep 1
     ;;
 help)
     usage

@@ -127,6 +127,24 @@ cleanup() {
     ros2 daemon stop
     exit 0
 }
+
+move_window() {
+    while true; do
+        has_awsim=$(wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
+        has_rviz=$(wmctrl -l | grep -q "RViz" && echo 1 || echo 0)
+        if [ "$has_awsim" -eq 1 ] && [ "$has_rviz" -eq 1 ]; then
+            break
+        fi
+        sleep 1
+    done
+    echo "AWSIMとRVizのウィンドウが見つかりました"
+    # Move windows
+    wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
+    sleep 1
+    wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
+    sleep 2
+}
+
 # Trap Ctrl+C (SIGINT) and normal termination (EXIT)
 trap cleanup SIGINT SIGTERM EXIT
 
@@ -179,18 +197,11 @@ sleep 3
 PID_UPDATER=$!
 echo "$PID_UPDATER" >>"$PID_FILE"
 
-# Start recording rviz2
-echo "Check if screen capture is ready"
-until (ros2 service type /debug/service/capture_screen >/dev/null); do
-    sleep 5
-    echo "Check if screen capture is not ready"
-done
-
-# Move windows
-wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
-wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
-
+move_window
+bash /aichallenge/publish.bash check
+move_window
 bash /aichallenge/publish.bash all
+bash /aichallenge/publish.bash screen
 
 # Start recording rosbag with nohup
 echo "Start rosbag"
