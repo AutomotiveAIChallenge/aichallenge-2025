@@ -134,6 +134,10 @@ bool SimplePurePursuit::subscribeMessageAvailable()
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "trajectory is not available");
     return false;
   }
+  if (trajectory_->points.empty()) {
+      RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/,  "trajectory points is empty");
+      return false;
+    }
   return true;
 }
 }  // namespace simple_pure_pursuit
