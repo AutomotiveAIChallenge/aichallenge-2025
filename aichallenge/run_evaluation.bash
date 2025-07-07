@@ -130,9 +130,9 @@ cleanup() {
 
 move_window() {
     while true; do
-        has_awsim=$(wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
+        has_awsim=$(command -v nvidia-smi >/dev/null && wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
         has_rviz=$(wmctrl -l | grep -q "RViz" && echo 1 || echo 0)
-        if [ "$has_awsim" -eq 1 ] && [ "$has_rviz" -eq 1 ]; then
+        if [ "$has_rviz" -eq 1 ] && ([ "$has_awsim" -eq 1 ] || ! command -v nvidia-smi >/dev/null); then
             break
         fi
         sleep 1
