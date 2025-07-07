@@ -42,16 +42,17 @@ public:
       return;
     }
     
-    timer_ = this->create_wall_timer(
-      std::chrono::seconds(1),
-      std::bind(&CSVToTrajectory::publish_trajectory, this));
-
     if (!loadCSVTrajectory(csv_path)) {
       RCLCPP_ERROR(get_logger(), "Failed to load CSV file: %s", csv_path.c_str());
       return;
     }
     
     RCLCPP_INFO(get_logger(), "Loaded trajectory from CSV with %zu points", csv_trajectory_.points.size());
+
+    timer_ = this->create_wall_timer(
+      std::chrono::seconds(1),
+      std::bind(&CSVToTrajectory::publish_trajectory, this));
+
   }
 
 private:
