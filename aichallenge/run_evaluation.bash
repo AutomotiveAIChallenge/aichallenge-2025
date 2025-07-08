@@ -129,10 +129,12 @@ cleanup() {
 }
 
 move_window() {
+    local has_gpu=$(command -v nvidia-smi >/dev/null && echo 1 || echo 0)
     while true; do
-        has_awsim=$(command -v nvidia-smi >/dev/null && wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
-        has_rviz=$(wmctrl -l | grep -q "RViz" && echo 1 || echo 0)
-        if [ "$has_rviz" -eq 1 ] && ([ "$has_awsim" -eq 1 ] || ! command -v nvidia-smi >/dev/null); then
+        local has_awsim=$(wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
+        local has_rviz=$(wmctrl -l | grep -q "RViz" && echo 1 || echo 0)
+        
+        if [ "$has_rviz" -eq 1 ] && ([ "$has_awsim" -eq 1 ] || [ "$has_gpu" -eq 0 ]); then
             break
         fi
         sleep 1
