@@ -53,17 +53,4 @@ TOPICS=(
     "/vehicle/status/velocity_status"
 )
 
-# Topics to exclude
-EXCLUDE_TOPICS=(
-    "/racing_kart/.*"
-    "/to_can_bus"
-    "/from_can_bus"
-)
-
-# Build exclusion pattern
-EXCLUDE_PATTERN="($(
-    IFS='|'
-    echo "${EXCLUDE_TOPICS[*]}"
-))"
-
 ros2 bag record "${TOPICS[@]}" -o rosbag2_autoware
