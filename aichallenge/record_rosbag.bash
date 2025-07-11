@@ -66,4 +66,4 @@ EXCLUDE_PATTERN="($(
     echo "${EXCLUDE_TOPICS[*]}"
 ))"
 
-ros2 bag record --topics "${TOPICS[@]}" -x "$EXCLUDE_PATTERN"
+ros2 bag record "${TOPICS[@]}" -o rosbag2_autoware

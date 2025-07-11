@@ -210,7 +210,7 @@ bash /aichallenge/publish.bash screen
 
 # Start recording rosbag with nohup
 echo "Start rosbag"
-nohup ros2 bag record -a -o rosbag2_autoware >/dev/null 2>&1 &
+nohup /aichallenge/record_rosbag.bash >/dev/null 2>&1 &
 PID_ROSBAG=$!
 echo "ROS Bag PID: $PID_ROSBAG"
 echo "$PID_ROSBAG" >>"$PID_FILE"
