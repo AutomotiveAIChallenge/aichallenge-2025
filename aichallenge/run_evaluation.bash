@@ -132,10 +132,12 @@ move_window() {
     local has_gpu
     has_gpu=$(command -v nvidia-smi >/dev/null && echo 1 || echo 0)
 
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     while true; do
-        local now=$(date +%s)
-        if (( now - start_time > 30 )); then
+        local now
+        now=$(date +%s)
+        if ((now - start_time > 30)); then
             echo "move_window: 30秒経過したためループを抜けます"
             break
         fi

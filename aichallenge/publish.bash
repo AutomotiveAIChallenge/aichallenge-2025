@@ -62,7 +62,7 @@ check_awsim() {
     start_time=$(date +%s)
     while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
         now=$(date +%s)
-        if (( now - start_time > 30 )); then
+        if ((now - start_time > 30)); then
             echo "/awsim/control_cmd: 30秒経過したためループを抜けます"
             break
         fi
@@ -79,7 +79,7 @@ check_capture() {
     start_time=$(date +%s)
     until (ros2 service type /debug/service/capture_screen >/dev/null); do
         now=$(date +%s)
-        if (( now - start_time > 30 )); then
+        if ((now - start_time > 30)); then
             echo "/debug/service/capture_screen: 30秒経過したためループを抜けます"
             break
         fi
