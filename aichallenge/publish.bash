@@ -59,7 +59,13 @@ set_initial_pose() {
 }
 
 check_awsim() {
+    start_time=$(date +%s)
     while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
+        now=$(date +%s)
+        if (( now - start_time > 30 )); then
+            echo "/awsim/control_cmd: 30秒経過したためループを抜けます"
+            break
+        fi
         sleep 0.5
         echo "Waiting for /awsim/control_cmd topic to be available..."
     done
@@ -70,7 +76,13 @@ check_awsim() {
 check_capture() {
     # Start recording rviz2
     echo "Check if screen capture is ready"
+    start_time=$(date +%s)
     until (ros2 service type /debug/service/capture_screen >/dev/null); do
+        now=$(date +%s)
+        if (( now - start_time > 30 )); then
+            echo "/debug/service/capture_screen: 30秒経過したためループを抜けます"
+            break
+        fi
         sleep 5
         echo "Check if screen capture is not ready"
     done
