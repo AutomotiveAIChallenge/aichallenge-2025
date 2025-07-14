@@ -141,12 +141,6 @@ private:
             continue;
           }
 
-          if (new_csv_path.empty()) {
-            RCLCPP_ERROR(get_logger(), "New csv_path parameter is empty. Keeping old trajectory.");
-            result.successful = false;
-            result.reason = "New csv_path parameter is empty.";
-            continue;
-          }
           if (new_csv_path != current_csv_path_) {
             RCLCPP_INFO(get_logger(), "csv_path parameter changed from '%s' to '%s'", 
                         current_csv_path_.c_str(), new_csv_path.c_str());
