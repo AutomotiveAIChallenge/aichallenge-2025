@@ -16,7 +16,7 @@
 #include <autoware_auto_planning_msgs/msg/trajectory.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
-
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -134,6 +134,13 @@ private:
         if (param.get_type() == rclcpp::ParameterType::PARAMETER_STRING) {
           std::string new_csv_path = param.as_string();
           // new_csv_pathがFileSystemのパスであることを確認
+          if (!std::filesystem::exists(new_csv_path)) {
+            RCLCPP_ERROR(get_logger(), "File does not exist: '%s'", new_csv_path.c_str());
+            result.successful = false;
+            result.reason = "File does not exist.";
+            continue;
+          }
+
           if (new_csv_path.empty()) {
             RCLCPP_ERROR(get_logger(), "New csv_path parameter is empty. Keeping old trajectory.");
             result.successful = false;
@@ -164,8 +171,6 @@ private:
         if (param.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE || param.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
           z_ = static_cast<float>(param.as_double());
           RCLCPP_INFO(get_logger(), "z parameter changed to %f", z_);
-          // Z値が変更された場合、既存の軌道点のZ値を更新することも可能ですが、
-          // 今回はCSV読み込み時に適用されるため、再読み込みは不要です。
         } else {
           RCLCPP_WARN(get_logger(), "Parameter 'z' received with wrong type. Expected float/double.");
           result.successful = false;
