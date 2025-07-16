@@ -77,8 +77,29 @@ cleanup() {
     # Stop recording rosbag
     echo "Stop rosbag"
     if [[ -n $PID_ROSBAG ]] && kill -0 "$PID_ROSBAG" 2>/dev/null; then
-        graceful_shutdown "$PID_ROSBAG" 3
+        # Try to stop rosbag gracefully first
+        echo "Attempting graceful rosbag shutdown..."
+        kill -TERM "$PID_ROSBAG"
+        
+        # Wait for rosbag to finish writing (up to 10 seconds)
+        local count=0
+        while kill -0 "$PID_ROSBAG" 2>/dev/null && [ $count -lt 100 ]; do
+            sleep 0.1
+            ((count++))
+        done
+        
+        # If still running, force kill
+        if kill -0 "$PID_ROSBAG" 2>/dev/null; then
+            echo "Rosbag did not terminate gracefully, forcing kill"
+            kill -9 "$PID_ROSBAG"
+            sleep 0.5
+        fi
     fi
+    
+    # Additional cleanup for any remaining rosbag processes
+    echo "Cleaning up any remaining rosbag processes..."
+    pkill -f "ros2 bag record" 2>/dev/null || true
+    sleep 1
 
     # shutdown ROS2 nodes
     echo "Shutting down ROS2 nodes gracefully..."
@@ -103,11 +124,25 @@ cleanup() {
     # Compress rosbag
     echo "Compress rosbag"
     if [ -d "rosbag2_autoware" ]; then
-        # Postprocess result
-        echo "Postprocess result"
-        python3 /aichallenge/workspace/src/aichallenge_system/script/motion_analytics.py --input rosbag2_autoware --output .
-        tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
-        rm -rf rosbag2_autoware
+        # Wait a bit more to ensure rosbag files are fully written
+        echo "Waiting for rosbag files to be fully written..."
+        sleep 2
+        
+        # Check if rosbag directory has content and is not being actively written
+        if [ -f "rosbag2_autoware/metadata.yaml" ] && [ ! -f "rosbag2_autoware/metadata.yaml.tmp" ]; then
+            # Postprocess result
+            echo "Postprocess result"
+            python3 /aichallenge/workspace/src/aichallenge_system/script/motion_analytics.py --input rosbag2_autoware --output .
+            tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
+            rm -rf rosbag2_autoware
+        else
+            echo "Warning: rosbag2_autoware directory appears to be incomplete or still being written"
+            # Try to compress anyway, but with a warning
+            tar -czf rosbag2_autoware.tar.gz rosbag2_autoware 2>/dev/null || echo "Failed to compress rosbag"
+            rm -rf rosbag2_autoware
+        fi
+    else
+        echo "Warning: rosbag2_autoware directory not found"
     fi
 
     # check for remaining processes
@@ -216,6 +251,13 @@ echo "ROS Bag PID: $PID_ROSBAG"
 echo "$PID_ROSBAG" >>"$PID_FILE"
 # recursively get child processes
 get_child_pids "$PID_ROSBAG"
+# Wait a moment for rosbag to initialize and verify it's running
+sleep 2
+if ! kill -0 "$PID_ROSBAG" 2>/dev/null; then
+    echo "Warning: Rosbag process is not running"
+else
+    echo "Rosbag recording started successfully"
+fi
 
 # Wait for AWSIM to finish (this is the main process we're waiting for)
 wait "$PID_AWSIM"
