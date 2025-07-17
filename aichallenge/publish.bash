@@ -74,13 +74,13 @@ check_awsim() {
 check_capture() {
     # Start recording rviz2
     echo "Check if screen capture is ready"
-    timeout_seconds=60  # 1 minute timeout
+    timeout_seconds=60 # 1 minute timeout
     elapsed=0
     until (ros2 service type /debug/service/capture_screen >/dev/null); do
         sleep 5
         elapsed=$((elapsed + 5))
         echo "Screen capture is not ready (${elapsed}s elapsed)"
-        
+
         if [ $elapsed -ge $timeout_seconds ]; then
             echo "Warning: Screen capture service not available after ${timeout_seconds}s timeout. Continuing anyway..."
             break

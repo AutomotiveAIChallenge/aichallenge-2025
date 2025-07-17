@@ -135,7 +135,7 @@ move_window() {
     has_gpu=$(command -v nvidia-smi >/dev/null && echo 1 || echo 0)
 
     # Add timeout to prevent infinite hanging
-    local timeout=60  # 60 seconds timeout
+    local timeout=60 # 60 seconds timeout
     local elapsed=0
 
     while [ $elapsed -lt $timeout ]; do
