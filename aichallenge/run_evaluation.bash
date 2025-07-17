@@ -80,14 +80,14 @@ cleanup() {
         # Try to stop rosbag gracefully first
         echo "Attempting graceful rosbag shutdown..."
         kill -TERM "$PID_ROSBAG"
-        
+
         # Wait for rosbag to finish writing (up to 10 seconds)
         local count=0
         while kill -0 "$PID_ROSBAG" 2>/dev/null && [ $count -lt 100 ]; do
             sleep 0.1
             ((count++))
         done
-        
+
         # If still running, force kill
         if kill -0 "$PID_ROSBAG" 2>/dev/null; then
             echo "Rosbag did not terminate gracefully, forcing kill"
@@ -95,7 +95,7 @@ cleanup() {
             sleep 0.5
         fi
     fi
-    
+
     # Additional cleanup for any remaining rosbag processes
     echo "Cleaning up any remaining rosbag processes..."
     pkill -f "ros2 bag record" 2>/dev/null || true
@@ -127,7 +127,7 @@ cleanup() {
         # Wait a bit more to ensure rosbag files are fully written
         echo "Waiting for rosbag files to be fully written..."
         sleep 2
-        
+
         # Check if rosbag directory has content and is not being actively written
         if [ -f "rosbag2_autoware/metadata.yaml" ] && [ ! -f "rosbag2_autoware/metadata.yaml.tmp" ]; then
             # Postprocess result
