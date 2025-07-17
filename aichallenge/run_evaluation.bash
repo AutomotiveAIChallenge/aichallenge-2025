@@ -131,7 +131,7 @@ cleanup() {
 move_window() {
     echo "Move window"
 
-    local has_gpu
+    local has_gpu has_awsim has_rviz
     has_gpu=$(command -v nvidia-smi >/dev/null && echo 1 || echo 0)
 
     # Add timeout to prevent infinite hanging
@@ -139,7 +139,6 @@ move_window() {
     local elapsed=0
 
     while [ $elapsed -lt $timeout ]; do
-        local has_awsim has_rviz
         has_awsim=$(wmctrl -l | grep -q "AWSIM" && echo 1 || echo 0)
         has_rviz=$(wmctrl -l | grep -q "RViz" && echo 1 || echo 0)
 
