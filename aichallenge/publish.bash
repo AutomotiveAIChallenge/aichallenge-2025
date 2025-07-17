@@ -15,8 +15,12 @@ usage() {
 # Function to capture screen
 capture_screen() {
     echo "Capturing screen..."
-    ros2 service call /debug/service/capture_screen std_srvs/srv/Trigger >/dev/null
-    echo "Screen capture requested"
+    timeout 10s ros2 service call /debug/service/capture_screen std_srvs/srv/Trigger >/dev/null
+    if [ $? -eq 124 ]; then
+        echo "Warning: Screen capture service call timed out after 10 seconds"
+    else
+        echo "Screen capture requested successfully"
+    fi
 }
 
 # Function to request control mode
