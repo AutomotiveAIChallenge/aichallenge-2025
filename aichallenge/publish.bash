@@ -65,7 +65,7 @@ set_initial_pose() {
 check_awsim() {
     timeout_seconds=60
     elapsed=0
-    while ! timeout 5s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
+    while ! timeout 10s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
         sleep 0.5
         elapsed=$((elapsed + 5))
         echo "Waiting for /awsim/control_cmd topic to be available... (${elapsed}s elapsed)"
