@@ -63,9 +63,17 @@ set_initial_pose() {
 }
 
 check_awsim() {
-    while ! timeout 2s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
+    timeout_seconds=60
+    elapsed=0
+    while ! timeout 5s ros2 topic echo /awsim/control_cmd 2>/dev/null | grep -q "sec:"; do
         sleep 0.5
-        echo "Waiting for /awsim/control_cmd topic to be available..."
+        elapsed=$((elapsed + 5))
+        echo "Waiting for /awsim/control_cmd topic to be available... (${elapsed}s elapsed)"
+        
+        if [ $elapsed -ge $timeout_seconds ]; then
+            echo "Warning: /awsim/control_cmd topic not available after ${timeout_seconds}s timeout. Continuing anyway..."
+            break
+        fi
     done
     sleep 1
     echo "System is ready, executing publish commands..."
