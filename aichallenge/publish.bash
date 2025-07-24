@@ -69,7 +69,7 @@ check_awsim() {
         sleep 0.5
         elapsed=$((elapsed + 5))
         echo "Waiting for /awsim/control_cmd topic to be available... (${elapsed}s elapsed)"
-        
+
         if [ $elapsed -ge $timeout_seconds ]; then
             echo "Warning: /awsim/control_cmd topic not available after ${timeout_seconds}s timeout. Continuing anyway..."
             break
