@@ -10,6 +10,7 @@ case "${mode}" in
     opts=("simulation:=true" "use_sim_time:=true" "run_rviz:=false")
     ;;
 "vehicle")
+    zenoh-bridge-ros2dds -c /vehicle/zenoh.json5 &
     opts=("simulation:=false" "use_sim_time:=false" "run_rviz:=false")
     ;;
 "rosbag")

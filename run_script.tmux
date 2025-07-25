@@ -9,7 +9,6 @@ VEHICLE_CD="cd $VEHICLE_DIR"
 
 AIC_DOCKER_RUN_CMD="bash docker_run.sh dev cpu"
 KART_DOCKER_RUN_CMD="bash run_driver.bash"
-ZENOH_DOCKER_RUN_CMD="bash run_zenoh.bash"
 
 AIC_WORKSPACE_CD_CMD="cd /aichallenge"
 SOURCE_CMD="source install/setup.bash"
@@ -34,7 +33,6 @@ split-window -h -p 50 # 左右に 50% 分割して、右にペイン 1 を作成
 select-pane -t 1      # 右側のペイン (1) を選択
 split-window -v -p 67 # ペイン 1 を 67% 下で分割し、ペイン 2 を作成
 split-window -v -p 50 # ペイン 2 を 50% 下で分割し、ペイン 3 を作成
-split-window -v -p 50 # ペイン 3 を 50% 下で分割し、ペイン 4 を作成
 # pane 0 is used for aic
 select-pane -t 0
 send-keys "set -x" C-m
@@ -59,13 +57,6 @@ send-keys "set -x" C-m
 send-keys "$VEHICLE_CD" C-m
 send-keys "$KART_DOCKER_RUN_CMD" C-m
 
-# pane 3 is used for zenoh docker
+# pane 3 is used for anything
 select-pane -t 3
-send-keys "set -x" C-m
-send-keys "$VEHICLE_CD" C-m
-send-keys "sleep 10" C-m
-send-keys "$ZENOH_DOCKER_RUN_CMD " C-m
-
-# pane 4 is used for anything
-select-pane -t 4
 send-keys "set -x" C-m
