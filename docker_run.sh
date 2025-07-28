@@ -36,5 +36,8 @@ mkdir -p $LOG_DIR
 LOG_FILE="$LOG_DIR/docker_run.log"
 echo "A rocker run log is stored at : file://$LOG_FILE"
 
+# clean up old <none> images
+docker image prune -f
+
 # shellcheck disable=SC2086
 rocker ${opts} --x11 --devices /dev/dri --user --net host --privileged --name "aichallenge-2025-$(date "+%Y-%m-%d-%H-%M-%S")" --volume ${volume} -- "aichallenge-2025-${target}-${USER}" 2>&1 | tee "$LOG_FILE"
