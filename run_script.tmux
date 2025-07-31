@@ -40,8 +40,6 @@ select-pane -t 0
 send-keys "set -x" C-m
 send-keys "$AIC_CD" C-m
 send-keys "echo $AIC_WORKSPACE_CD_CMD" C-m
-# 起動する前に全ての起動中のDockerコンテナを停止
-send-keys "echo $DOCKER_KILL_CMD" C-m
 send-keys "$AIC_AUTOWARE_DOCKER_RUN_CMD" C-m
 
 # pane 1 is used for aic rosbag record
