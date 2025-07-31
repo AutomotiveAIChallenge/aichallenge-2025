@@ -27,7 +27,11 @@ capture_screen() {
 request_control() {
     echo "Requesting control mode change..."
     timeout 20s ros2 service call /control/control_mode_request autoware_auto_vehicle_msgs/srv/ControlModeCommand '{mode: 1}' >/dev/null
-    echo "Control mode change requested"
+    if [ $? -eq 124 ]; then
+        echo "Warning: Control mode request timed out after 20 seconds"
+    else
+        echo "Control mode change requested successfully"
+    fi
 }
 
 # Function to set initial pose
