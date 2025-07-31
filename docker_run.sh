@@ -22,7 +22,7 @@ case "${mode}" in
     echo "[INFO] Running in Autoware mode (forced by argument)"
     ;;
 "build")
-    cmd=" /aichallenge/build_autoware.bash"
+    cmd=" /aichallenge/build_autoware.bash clean"
     echo "[INFO] Running in Build mode (forced by argument)"
     ;;
 *)
