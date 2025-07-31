@@ -6,7 +6,7 @@ VEHICLE_DIR="/home/$USER/aichallenge-2025/vehicle"
 
 AIC_CD="cd $AIC_DIR"
 VEHICLE_CD="cd $VEHICLE_DIR"
-AIC_AUTOWARE_DOCKER_RUN_CMD="bash docker_run.sh dev vehicle"
+AIC_AUTOWARE_DOCKER_RUN_CMD="bash docker_run.sh dev cpu autoware"
 AIC_DOCKER_RUN_CMD="bash docker_run.sh dev"
 
 KART_DOCKER_RUN_CMD="bash run_driver.bash"

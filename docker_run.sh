@@ -2,6 +2,7 @@
 
 target="${1}"
 device="${2}"
+mode="${3}"
 case "${target}" in
 "eval")
     volume="output:/output"
@@ -14,11 +15,22 @@ case "${target}" in
     exit 1
     ;;
 esac
-cmd=""
-if [ "${device}" = "vehicle" ]; then
+
+case "${mode}" in
+"autoware")
     cmd=" bash /aichallenge/run_autoware.bash vehicle"
-    echo "[INFO] Running in Vehicle mode (forced by argument)"
-elif [ "${device}" = "cpu" ]; then
+    echo "[INFO] Running in Autoware mode (forced by argument)"
+    ;;
+"build")
+    cmd=" /aichallenge/build_autoware.bash"
+    echo "[INFO] Running in Build mode (forced by argument)"
+    ;;
+*)
+    cmd=""
+    ;;
+esac
+
+if [ "${device}" = "cpu" ]; then
     opts=""
     echo "[INFO] Running in CPU mode (forced by argument)"
 elif [ "${device}" = "gpu" ]; then
