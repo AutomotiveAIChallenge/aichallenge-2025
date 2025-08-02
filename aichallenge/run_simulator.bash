@@ -2,6 +2,7 @@
 AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM
 
 mode="${1}"
+id="${2:-255}" # デフォルト値255を設定
 
 if command -v nvidia-smi &>/dev/null && [[ -e /dev/nvidia0 ]]; then
     echo "[INFO] NVIDIA GPU detected"
@@ -22,4 +23,9 @@ esac
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
 sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
+# idが0の場合
+if [ "$id" -eq 0 ]; then
+    export ROS_LOCAL_HOST_ONLY=1
+    export ROS_DOMAIN_ID=$id
+fi
 $AWSIM_DIRECTORY/AWSIM.x86_64 "${opts[@]}"
