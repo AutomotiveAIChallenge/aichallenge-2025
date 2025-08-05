@@ -7,7 +7,7 @@ run-autoware-only:
 		echo "Autoware container already running"; \
 	fi
 	@echo "Starting all services without build..."
-	docker compose exec -T autoware bash -c "bash run_autoware.bash awsim" &
+	docker compose exec -T autoware bash -c "bash run_autoware.bash vehicle" &
 
 # racing kartとzenohの起動 
 run-driver-zenoh:
