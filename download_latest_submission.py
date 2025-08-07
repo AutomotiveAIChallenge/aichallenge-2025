@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class SubmissionDownloader:
     def __init__(self):
         """Initialize the downloader with configuration"""
-        self.api_base_url = os.getenv('API_BASE_URL', 'http://dev.aichallenge-board.jsae.or.jp')
+        self.api_base_url = os.getenv('API_BASE_URL', 'http://aichallenge-board.jsae.or.jp')
 
         # Initialize requests session
         self.session = requests.Session()
