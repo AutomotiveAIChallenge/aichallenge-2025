@@ -1,5 +1,5 @@
 # make file inspired by https://roborovsky-racers.github.io/RoborovskyNote/
-sim: AWSIM
+sim:
 	@sudo ip link set multicast on lo
 	@sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 	@echo "Start AWSIM"
@@ -21,8 +21,5 @@ reset:
 	@ros2 topic pub --once /aichallenge/awsim/reset std_msgs/msg/Empty {} >/dev/null &
 	@./publish_initialpose.py
 
-setup: sim aw
-	@echo ""
-
-all: sim aw mpc
+all: sim aw
 	@echo ""
