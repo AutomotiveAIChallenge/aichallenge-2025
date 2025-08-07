@@ -1,5 +1,5 @@
 # make file inspired by https://roborovsky-racers.github.io/RoborovskyNote/
-sim: AWSIM
+sim:
 	@sudo ip link set multicast on lo
 	@sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 	@echo "Start AWSIM"
