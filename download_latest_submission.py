@@ -260,7 +260,7 @@ def main():
     parser = argparse.ArgumentParser(description='Download latest submission file')
     parser.add_argument('--username', required=True, help='AWS Cognito username (email)')
     parser.add_argument('--password', required=True, help='AWS Cognito password')
-    parser.add_argument('--output', default='./', help='Output directory (default: ./s/)')
+    parser.add_argument('--output', default='./', help='Output directory (default: ./)')
     parser.add_argument('--submission-id', help='Download specific submission by ID')
 
     args = parser.parse_args()
