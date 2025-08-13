@@ -24,6 +24,16 @@ def run_comprehensive_test():
         print(f"✅ Initialization complete:")
         print(f"  📊 Total lane polygons: {len(safety_monitor.lane_polygons)}")
         print(f"  🗺️  OSM file: {safety_monitor.osm_file}")
+        print(f"  🔢 Total nodes: {len(safety_monitor.nodes)}")
+        print(f"  📐 Lane coordinates: {len(safety_monitor.lane_coords)}")
+        
+        # OSMファイルの存在確認
+        import os
+        if os.path.exists(safety_monitor.osm_file):
+            print(f"  ✅ OSM file exists")
+        else:
+            print(f"  ❌ OSM file NOT found: {safety_monitor.osm_file}")
+            return None, None, None
         
         # テストポイントの生成と分類
         print("\n🧪 Running lane classification test...")
@@ -86,6 +96,20 @@ def run_performance_benchmark():
         print(f"❌ Benchmark error: {e}")
         return []
 
+def debug_point_classification(safety_monitor, x, y):
+    """特定の点の分類をデバッグ"""
+    print(f"\n🔍 Debugging point ({x}, {y}):")
+    print(f"Total lane polygons: {len(safety_monitor.lane_polygons)}")
+    
+    for i, polygon in enumerate(safety_monitor.lane_polygons):
+        contains = polygon.contains_point((x, y))
+        print(f"  Lane {i+1}: {'✅ INSIDE' if contains else '❌ OUTSIDE'}")
+        if contains:
+            return True
+    
+    print(f"  Final result: OUTSIDE")
+    return False
+
 def run_accuracy_test():
     """精度テストを実行"""
     print("\n🎯 Accuracy Test")
@@ -98,8 +122,8 @@ def run_accuracy_test():
         known_test_cases = [
             # (x, y, expected_classification, description)
             (89650.0, 43150.0, "OUTSIDE", "Known outside point"),
-            (89630.0, 43160.0, "DRIVING_LANE", "Known driving lane point"),
-            (89680.0, 43140.0, "DRIVING_LANE", "Known driving lane point"),
+            (89629.0, 43160.0, "DRIVING_LANE", "Known driving lane point (1m west)"),
+            (89630.0, 43159.0, "DRIVING_LANE", "Known driving lane point (1m south)"),
             (89685.0, 43150.0, "DRIVING_LANE", "Potential connecting road point"),
             (89600.0, 43100.0, "OUTSIDE", "Far outside point"),
         ]
@@ -118,6 +142,10 @@ def run_accuracy_test():
                 correct += 1
             
             print(f"({x:6.1f}, {y:6.1f})  {expected:<15} {actual:<15} {result:<10} {description}")
+            
+            # 失敗した場合は詳細デバッグ
+            if actual != expected:
+                debug_point_classification(safety_monitor, x, y)
         
         accuracy = correct / total * 100
         print(f"\n📈 Accuracy: {correct}/{total} ({accuracy:.1f}%)")

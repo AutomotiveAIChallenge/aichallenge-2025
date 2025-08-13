@@ -8,7 +8,11 @@ from matplotlib import path
 import matplotlib.pyplot as plt
 import os
 from nav_msgs.msg import Odometry
-from autoware_auto_control_msgs.msg import AckermannControlCommand
+from std_msgs.msg import Header
+try:
+    from tier4_vehicle_msgs.msg import ActuationCommandStamped
+except:
+    None
 
 class RouteDeviationSafetyMonitor:
     def __init__(self, osm_file_path=None):
@@ -140,7 +144,7 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
         super().__init__("route_deviation_safety_monitor")
         
         # パラメータ設定
-        self.declare_parameter('enable_visualization', True)
+        self.declare_parameter('enable_visualization', False)
         self.enable_viz = self.get_parameter('enable_visualization').get_parameter_value().bool_value
         
         # 安全監視装置の初期化
@@ -148,9 +152,22 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
         
         # 状態管理
         self.current_position = None
+        self.current_velocity = 0.0  # 現在速度 [m/s]
         self.deviation_start_time = None
         self.is_outside_route = False
         self.position_count = 0  # 可視化用カウンタ
+        
+        # P制御パラメータ（比例制御のみ）
+        self.target_speed_kmh = 5.0  # 目標速度 [km/h]
+        self.target_speed_ms = self.target_speed_kmh / 3.6  # 目標速度 [m/s]
+        self.max_acceleration = 2.0  # 最大加速度 [m/s²]
+        self.min_acceleration = -3.0  # 最小加速度 [m/s²]
+        
+        # 安全制御状態管理
+        self.safety_mode_active = False
+        self.safety_control_active = False  # 介入状態フラグ
+        self.safety_control_timer = None    # 300Hz制御タイマー
+        self.low_speed_threshold = 4.0 / 3.6# 安全対策解除速度閾値 [m/s] (約4.0km/h)
         
         # ROS 2 トピック設定
         self.position_sub = self.create_subscription(
@@ -161,7 +178,7 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
         )
         
         self.safety_control_pub = self.create_publisher(
-            AckermannControlCommand,
+             ActuationCommandStamped,
             '/control/command/actuation_cmd',
             10
         )
@@ -179,6 +196,10 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
             'y': msg.pose.pose.position.y,
             'timestamp': time.time()
         }
+        
+        # 速度情報を更新
+        linear_vel = msg.twist.twist.linear
+        self.current_velocity = (linear_vel.x**2 + linear_vel.y**2)**0.5
         
     def monitor_position(self):
         if self.current_position is None:
@@ -207,6 +228,7 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
                 self.get_logger().info("Vehicle returned to route")
                 self.is_outside_route = False
                 self.deviation_start_time = None
+                self._check_safety_release_condition()
         else:
             # 経路外
             if not self.is_outside_route:
@@ -218,17 +240,110 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
                 # 継続的な逸脱
                 deviation_duration = current_time - self.deviation_start_time
                 if deviation_duration >= 3.0:  # 3秒経過
-                    self._execute_safety_control()
+                    self._activate_safety_intervention()
+    
+    def _compute_accel_brake_control(self):
+        """ブレーキ制御による目標速度達成"""
+        # 速度誤差
+        speed_error = self.target_speed_ms - self.current_velocity
+        
+        # 制御パラメータ
+        brake_gain = 0.8    # ブレーキ応答ゲイン
+        deadband = 0.1      # 制御不感帯 [m/s]
+        
+        # ブレーキ値の初期化
+        brake_cmd = 0.0
+        
+        if abs(speed_error) < deadband:
+            # 目標速度に近い場合：制御しない
+            brake_cmd = 0.0
+            
+        elif speed_error > 0:
+            # 現在速度 < 目標速度：制御不要
+            brake_cmd = 0.0
+            
+        else:
+            # 現在速度 > 目標速度：減速が必要
+            if abs(speed_error) > 1.0:
+                # 大幅に速い場合：強めのブレーキ
+                brake_cmd = max(0.0, min(0.8, brake_gain * abs(speed_error)))
+            else:
+                # 軽微なブレーキ
+                brake_cmd = max(0.0, min(0.4, brake_gain * abs(speed_error) * 0.5))
+        
+        return brake_cmd
+    
+    def _activate_safety_intervention(self):
+        """安全介入を開始（300Hz制御開始）"""
+        if not self.safety_control_active:
+            self.safety_control_active = True
+            self.safety_mode_active = True
+            
+            # 300Hz制御タイマーを開始
+            self.safety_control_timer = self.create_timer(0.00333, self._execute_safety_control)  # 300Hz
+            
+            self.get_logger().error("SAFETY INTERVENTION ACTIVATED - Starting 300Hz control")
+    
+    def _check_safety_release_condition(self):
+        """安全制御解除条件をチェック"""
+        if self.safety_control_active:
+            # 条件1: 経路内復帰 AND 速度が閾値以下
+            if not self.is_outside_route and self.current_velocity <= self.low_speed_threshold:
+                self._deactivate_safety_intervention()
+    
+    def _deactivate_safety_intervention(self):
+        """安全介入を停止"""
+        if self.safety_control_active:
+            self.safety_control_active = False
+            self.safety_mode_active = False
+            
+            # 300Hz制御タイマーを停止
+            if self.safety_control_timer is not None:
+                self.safety_control_timer.cancel()
+                self.destroy_timer(self.safety_control_timer)
+                self.safety_control_timer = None
     
     def _execute_safety_control(self):
-        # エラー出力して停止コマンド送信
-        self.get_logger().error("SAFETY CONTROL ACTIVATED")
+        # 安全制御が非活性の場合は何もしない
+        if not self.safety_control_active:
+            return
+            
+        # 安全制御解除条件をチェック
+        self._check_safety_release_condition()
         
-        stop_cmd = AckermannControlCommand()
-        stop_cmd.longitudinal.speed = 0.0
-        stop_cmd.longitudinal.acceleration = -3.0
+        # 現在速度が目標速度以下の場合は制御しない
+        if self.current_velocity <= self.target_speed_ms:
+            return
         
-        self.safety_control_pub.publish(stop_cmd)
+        # アクセル・ブレーキ制御計算
+        brake_cmd = self._compute_accel_brake_control()
+        
+        # 制御コマンド生成（ActuationCommandStamped形式）
+        safety_cmd = ActuationCommandStamped()
+        safety_cmd.header.stamp = self.get_clock().now().to_msg()
+        safety_cmd.header.frame_id = "base_link"
+        
+        # アクチュエーション制御値を設定
+        safety_cmd.actuation.accel_cmd = 0.0
+        safety_cmd.actuation.brake_cmd = brake_cmd
+        safety_cmd.actuation.steer_cmd = 0.0  # 安全制御時は直進
+        
+        self.safety_control_pub.publish(safety_cmd)
+        
+        # ログ出力（300Hzでは制限）
+        if hasattr(self, '_log_counter'):
+            self._log_counter += 1
+        else:
+            self._log_counter = 0
+            
+        # 0.1Hzでログ出力（3000回に1回 = 10秒に1回）
+        if self._log_counter % 3000 == 0:
+            speed_error = self.target_speed_ms - self.current_velocity
+            self.get_logger().info(
+                f"[300Hz] Accel/Brake Control: vel={self.current_velocity:.2f}m/s, "
+                f"target={self.target_speed_ms:.2f}m/s, "
+                f"brake={brake_cmd:.3f}"
+            )
 
 def main(args=None):
     rclpy.init(args=args)
