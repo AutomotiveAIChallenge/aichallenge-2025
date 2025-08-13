@@ -13,30 +13,19 @@ from autoware_auto_control_msgs.msg import AckermannControlCommand
 class RouteDeviationSafetyMonitor:
     def __init__(self, osm_file_path=None):
         # OSMファイルを探す
-        try:
-            from ament_index_python.packages import get_package_share_directory
-            aichallenge_system_map_path = os.path.join(
-                get_package_share_directory('aichallenge_system_launch'),
-                'map', 'route_map.osm'
-            )
-        except:
-            aichallenge_system_map_path = None
-            
-        possible_paths = [
-            osm_file_path,
-            aichallenge_system_map_path,
-            './lanelet2_map.osm',
-            '../map/lanelet2_map.osm'
-        ]
-        
-        self.osm_file = None
-        for path in possible_paths:
-            if path and os.path.exists(path):
-                self.osm_file = path
-                break
-        
-        if not self.osm_file:
-            raise FileNotFoundError("lanelet2_map.osm not found")
+        if osm_file_path:
+            self.osm_file = osm_file_path
+        else:
+            try:
+                from ament_index_python.packages import get_package_share_directory
+                self.osm_file = os.path.join(
+                    get_package_share_directory('aichallenge_system_launch'),
+                    'map', 'route_area.osm'
+                )
+            except:
+                # フォールバック: 相対パス
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                self.osm_file = os.path.join(script_dir, '..', 'map', 'route_area.osm')
         
         self.nodes = {}
         self.lane_polygons = []
@@ -224,7 +213,7 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
                 # 初回逸脱検出
                 self.is_outside_route = True
                 self.deviation_start_time = current_time
-                self.get_logger().warn("Route deviation detected")
+                self.get_logger().error("Route deviation detected")
             else:
                 # 継続的な逸脱
                 deviation_duration = current_time - self.deviation_start_time
