@@ -1,12 +1,26 @@
 SHELL := /bin/bash
-
-# autowareのみ起動
-run-autoware-only:
+# 既にコンテナが立ち上がっている場合はログの表示を行います。
+# autowareのみ起動・ログ表示
+autoware:
 	docker compose up -d autoware
 	docker compose logs -f autoware
 
-# racing kartとzenohの起動 
-run-driver-zenoh:
+# racing kartの起動・ログ表示
+driver:
+	docker compose up -d driver
+	docker compose logs -f driver
+
+# zenohの起動・ログ表示
+zenoh:
+	docker compose up -d zenoh
+	docker compose logs -f zenoh
+
+# racing_kart_interfaceのbashを起動
+driver-bash:
+	docker compose run driver bash
+
+# racing kartとzenohの起動・ログ表示
+driver-zenoh:
 	docker compose up -d driver zenoh
 	docker compose logs -f driver zenoh
 
@@ -18,7 +32,7 @@ run-full-system:
 # Download submission data by asking for credentials interactively
 # Usage:
 #   make download [SUBMISSION_ID=<id>]
-download-only:
+download:
 	@read -p "Enter Username: " USERNAME; \
 	read -sp "Enter Password: " PASSWORD; \
 	echo ""; \
@@ -55,11 +69,11 @@ download-only:
 	@echo "Process finished."
 
 # autowareのbuildのみ
-build-only:
+build:
 	docker compose up -d aic-build
 	docker compose logs -f aic-build
 
-# 上記全部やっちゃう
+# ダウンロードからビルド・実行まで全て行う
 all:download-only
 	docker compose up -d aic-build driver zenoh autoware
 	docker compose logs -f aic-build driver zenoh autoware
