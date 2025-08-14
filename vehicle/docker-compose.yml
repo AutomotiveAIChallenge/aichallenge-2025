@@ -1,5 +1,6 @@
 x-autoware-base: &autoware-base
   image: "aichallenge-2025-dev-${USER}"
+  stop_grace_period: 0.1s
   privileged: true
   network_mode: host
   environment:
@@ -23,6 +24,7 @@ services:
   zenoh:
     image: "aichallenge-2025-dev-${USER}"
     container_name: "zenoh"
+    stop_grace_period: 0.1s
     privileged: true
     network_mode: host
     environment:
@@ -41,8 +43,9 @@ services:
 
   # Driver service
   driver:
-    image: "ghcr.io/automotiveaichallenge/racing_kart_interface"
+    image: "ghcr.io/tier4/racing_kart_interface"
     container_name: "racing_kart_interface"
+    stop_grace_period: 0.1s
     privileged: true
     network_mode: host
     environment:
