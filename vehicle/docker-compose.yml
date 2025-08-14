@@ -1,3 +1,23 @@
+x-autoware-base: &autoware-base
+  image: "aichallenge-2025-dev-${USER}"
+  privileged: true
+  network_mode: host
+  environment:
+    - DISPLAY=${DISPLAY}
+    - USER=${USER}
+    - ROS_DISTRO=humble
+  volumes:
+    - ../output:/output
+    - ../aichallenge:/aichallenge
+    - ../remote:/remote
+    - ./:/vehicle
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    - /dev/dri:/dev/dri
+  devices:
+    - /dev/dri
+  working_dir: /aichallenge
+
+
 services:
   # Zenoh service
   zenoh:
@@ -40,22 +60,12 @@ services:
 
   # Autoware service
   autoware:
-    image: "aichallenge-2025-dev-${USER}"
-    container_name: "aichallenge-2025-autoware"
-    privileged: true
-    network_mode: host
-    environment:
-      - DISPLAY=${DISPLAY}
-      - USER=${USER}
-      - ROS_DISTRO=humble
-    volumes:
-      - ../output:/output
-      - ../aichallenge:/aichallenge
-      - ../remote:/remote
-      - ./:/vehicle
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - /dev/dri:/dev/dri
-    devices:
-      - /dev/dri
-    working_dir: /aichallenge
-    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && sleep infinity"]
+    <<: *autoware-base 
+    container_name: "aic-2025-autoware"
+    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_autoware.bash vehicle"]
+
+  # Aic-build service
+  aic-build:
+    <<: *autoware-base
+    container_name: "aic-2025-build"
+    command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']

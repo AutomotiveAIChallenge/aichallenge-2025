@@ -53,6 +53,7 @@ download-only:
 		echo "----------------------------------------"; \
 	fi
 	@echo "Process finished."
+
 # autowareのbuildのみ
 build-only:
 	docker compose up -d aic-build
@@ -61,10 +62,7 @@ build-only:
 # 上記全部やっちゃう
 all:download-only
 	docker compose up -d aic-build driver zenoh autoware
-	docker compose logs -f aic-build dricer zenoh autoware
-# all:download-only build-only run-driver-zenoh run-autoware-only
-# 	@echo "All services started, showing logs..."
-# 	docker compose logs -f autoware driver zenoh
+	docker compose logs -f aic-build driver zenoh autoware
 
 # Stop all services
 stop-all:
