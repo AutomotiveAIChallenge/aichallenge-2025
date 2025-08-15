@@ -7,7 +7,8 @@ ament_auto_find_build_dependencies()
 install(PROGRAMS
   script/control_mode_adapter.py
   script/object_marker.py
+  script/route_safety_monitor.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
-ament_auto_package(INSTALL_TO_SHARE launch config)
+ament_auto_package(INSTALL_TO_SHARE launch config map)
