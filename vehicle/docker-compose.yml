@@ -100,7 +100,7 @@ services:
   driver-build:
     tty: true
     stdin_open: true
-    image: "racing_kart_interface:latest"
+    image: "ghcr.io/tier4/racing_kart_interface:latest-experiment"
     container_name: "racing_kart_interface-build"
     stop_grace_period: 0.1s
     privileged: true
