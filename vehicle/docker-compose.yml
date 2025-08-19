@@ -61,7 +61,7 @@ services:
       - /dev/vcu:/dev/vcu
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev/dri:/dev/dri
-      - ../../racing_kart_interface/src:/workspace/src
+      - ../../racing_kart_interface:/workspace
     devices:
       - /dev/ttyACM0
     group_add:
@@ -95,3 +95,26 @@ services:
     container_name: "aic-2025-build"
     stop_grace_period: 0.1s
     command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']
+
+  # Driver build service
+  driver-build:
+    tty: true
+    stdin_open: true
+    image: "racing_kart_interface:latest"
+    container_name: "racing_kart_interface-build"
+    stop_grace_period: 0.1s
+    privileged: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - USER=${USER}
+    volumes:
+      - /dev/vcu:/dev/vcu
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev/dri:/dev/dri
+      - ../../racing_kart_interface:/workspace
+    devices:
+      - /dev/ttyACM0
+    group_add:
+      - dialout
+    command: ['build']
