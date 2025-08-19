@@ -38,10 +38,12 @@ services:
     devices:
       - /dev/dri
     working_dir: /vehicle
-    command: zenoh-bridge-ros2dds -c /vehicle/zenoh.json5
+    command: zenoh-bridge-ros2dds client -e tcp/57.180.63.135:7447 -c /vehicle/zenoh.json5
 
   # Driver service
   driver:
+    tty: true
+    stdin_open: true
     image: "ghcr.io/tier4/racing_kart_interface:latest-experiment"
     container_name: "racing_kart_interface"
     stop_grace_period: 0.1s
@@ -54,9 +56,9 @@ services:
       - /dev/vcu:/dev/vcu
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev/dri:/dev/dri
+      - ../../racing_kart_interface/src:/workspace/src
     devices:
-      - /dev/dri
-      - /dev/vcu
+      - /dev/ttyACM0
     group_add:
       - dialout
 
