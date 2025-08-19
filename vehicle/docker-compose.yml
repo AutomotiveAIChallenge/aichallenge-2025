@@ -59,11 +59,10 @@ services:
       - USER=${USER}
     volumes:
       - /dev/vcu:/dev/vcu
+      - /dev/gnss:/dev/gnss
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev/dri:/dev/dri
       - ../../racing_kart_interface:/workspace
-    devices:
-      - /dev/ttyACM0
     group_add:
       - dialout
 
@@ -110,11 +109,10 @@ services:
       - USER=${USER}
     volumes:
       - /dev/vcu:/dev/vcu
+      - /dev/gnss:/dev/gnss
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev/dri:/dev/dri
       - ../../racing_kart_interface:/workspace
-    devices:
-      - /dev/ttyACM0
     group_add:
       - dialout
     command: ['build']
