@@ -15,6 +15,7 @@ x-autoware-base: &autoware-base
     - /dev/dri:/dev/dri
   devices:
     - /dev/dri
+    - /dev/video0
   working_dir: /aichallenge
 
 

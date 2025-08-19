@@ -59,6 +59,16 @@
         <arg name="output_topic_gnss_pose_cov" value="pose_with_covariance"/>
       </include>
     </group>
+    <group>
+      <push-ros-namespace namespace="camera"/>
+        <node pkg="usb_cam" exec="usb_cam_node_exe" name="usb_cam_node" output="screen">
+        <param name="video_device" value="/dev/video0"/>
+        <param name="image_width" value="1920"/>
+        <param name="image_height" value="1280"/>
+        <param name="pixel_format" value="uyvy"/>
+        <param name="framerate" value="1.0"/>
+        </node>
+    </group>
   </group>
 
     <!-- Localization -->
