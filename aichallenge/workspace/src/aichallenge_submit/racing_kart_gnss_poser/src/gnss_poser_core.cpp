@@ -65,11 +65,11 @@ GNSSPoser::GNSSPoser(const rclcpp::NodeOptions & node_options)
     [this](const autoware_auto_vehicle_msgs::msg::GearReport::SharedPtr msg)
     {
       if (msg->report == autoware_auto_vehicle_msgs::msg::GearReport::DRIVE)
-        gear_ = 'R';
+        gear_ = 'D';
       else if (msg->report == autoware_auto_vehicle_msgs::msg::GearReport::NONE)
         gear_ = 'N';
       else if (msg->report == autoware_auto_vehicle_msgs::msg::GearReport::REVERSE)
-        gear_ = 'D';
+        gear_ = 'R';
     });
 }
 
