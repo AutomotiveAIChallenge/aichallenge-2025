@@ -51,6 +51,7 @@ TOPICS=(
     "/vehicle/status/steering_status"
     "/vehicle/status/turn_indicators_status"
     "/vehicle/status/velocity_status"
+    "/sensing/camera/image_raw"
 )
 
 ros2 bag record "${TOPICS[@]}" &
