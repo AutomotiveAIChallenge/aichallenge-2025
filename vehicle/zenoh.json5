@@ -58,6 +58,7 @@
           "/vehicle/.*",
           "/control/.*",
           "/sensing/gnss/nav_sat_fix",
+          "/sensing/gnss/navpvt",
           "/sensing/imu/imu_raw",
           "/sensing/vehicle_velocity_converter/twist_with_covariance"
         ],
