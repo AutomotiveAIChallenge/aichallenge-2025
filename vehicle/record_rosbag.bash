@@ -40,6 +40,7 @@ TOPICS=(
     "/sensing/gnss/navpvt"
     "/sensing/gnss/pose"
     "/sensing/gnss/pose_with_covariance"
+    "/sensing/camera/image_raw"
     "/sensing/imu/imu_data"
     "/sensing/imu/imu_raw"
     "/sensing/vehicle_velocity_converter/twist_with_covariance"
