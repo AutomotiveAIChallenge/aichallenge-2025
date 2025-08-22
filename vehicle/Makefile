@@ -11,6 +11,7 @@ driver:
 	docker compose logs -f driver
 
 # zenohの起動・ログ表示
+    tty: true
 zenoh:
 	docker compose up -d zenoh
 	docker compose logs -f zenoh
@@ -26,7 +27,7 @@ driver-zenoh:
 
 # aicコンテナにてros2 bag record -a
 rosbag:
-	docker compose up -d rosbag
+	docker compose up -d rosbag 
 	docker compose logs -f rosbag
 
 # Autowareとracing kartとzenohの起動
@@ -74,9 +75,20 @@ download:
 	@echo "Process finished."
 
 # autowareのbuildのみ
-build:
+build-autoware:
 	docker compose up -d aic-build
 	docker compose logs -f aic-build
+
+# driverのbuildのみ
+build-driver:
+	docker compose up -d driver-build
+	docker compose logs -f driver-build
+
+# rvizの起動・ログ表示
+rviz2:
+	docker compose stop rviz2
+	docker compose up -d rviz2
+	docker compose logs -f rviz2
 
 # ダウンロードからビルド・実行まで全て行う
 all:download-only
@@ -91,6 +103,8 @@ stop-driver:
 	docker compose stop driver
 stop-rosbag:
 	docker compose stop rosbag
+stop-rviz2:
+	docker compose stop rviz2
 # Stop all services
 stop-all:
 	docker compose down

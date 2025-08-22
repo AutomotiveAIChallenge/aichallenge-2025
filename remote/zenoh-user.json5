@@ -54,18 +54,11 @@
       ////               or is not specified at all, it means that ALL such interface are allowed.
       allow: {
         publishers: [
-          "/localization/kinematic_state",
-          "/vehicle/.*",
-          "/control/.*",
-          "/map/.*",
-          "/sensing/gnss/nav_sat_fix",
-          "/sensing/gnss/navpvt",
-          "/sensing/imu/imu_raw",
-          "/sensing/vehicle_velocity_converter/twist_with_covariance"
+          "/initialpose",
+          "/racing_kart/joy"
         ],
         subscribers: [
-          "/racing_kart/joy",
-          "/initialpose"
+          ".*"
         ],
         service_servers: [".*"],
         service_clients: [".*"],
@@ -182,7 +175,7 @@
   ////
   //// mode: The bridge's mode (router, peer or client)
   ////
-  mode: "router",
+  mode: "client",
 
   ////
   //// Which endpoints to connect to. E.g. tcp/localhost:7447.

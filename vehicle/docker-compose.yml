@@ -1,11 +1,15 @@
 x-autoware-base: &autoware-base
   image: "aichallenge-2025-dev-${USER}"
   privileged: true
+  pull_policy: never
   network_mode: host
   environment:
     - DISPLAY=${DISPLAY}
     - USER=${USER}
     - ROS_DISTRO=humble
+    - XAUTHORITY=${XAUTHORITY}
+    - QT_X11_NO_MITSHM=1
+    - TZ=Asia/Tokyo
   volumes:
     - ../output:/output
     - ../aichallenge:/aichallenge
@@ -13,10 +17,11 @@ x-autoware-base: &autoware-base
     - ./:/vehicle
     - /tmp/.X11-unix:/tmp/.X11-unix:rw
     - /dev/dri:/dev/dri
+    - ${XAUTHORITY}:${XAUTHORITY}:rw
   devices:
     - /dev/dri
+    - /dev/video0
   working_dir: /aichallenge
-
 
 services:
   # Zenoh service
@@ -38,11 +43,13 @@ services:
     devices:
       - /dev/dri
     working_dir: /vehicle
-    command: zenoh-bridge-ros2dds -c /vehicle/zenoh.json5
+    command: zenoh-bridge-ros2dds client -e tcp/57.180.63.135:7447 -c /vehicle/zenoh.json5
 
   # Driver service
   driver:
-    image: "ghcr.io/tier4/racing_kart_interface"
+    tty: true
+    stdin_open: true
+    image: "ghcr.io/tier4/racing_kart_interface:latest-experiment"
     container_name: "racing_kart_interface"
     stop_grace_period: 0.1s
     privileged: true
@@ -52,11 +59,10 @@ services:
       - USER=${USER}
     volumes:
       - /dev/vcu:/dev/vcu
+      - /dev/gnss:/dev/gnss
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev/dri:/dev/dri
-    devices:
-      - /dev/dri
-      - /dev/vcu
+      - ../../racing_kart_interface:/workspace
     group_add:
       - dialout
 
@@ -70,8 +76,17 @@ services:
   # rosbag record 
   rosbag:
     <<: *autoware-base 
+    init: true
     container_name: "aic-2025-rosbag"
-    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec ros2 bag record -a"]
+    stop_grace_period: 5.0s
+    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /vehicle && exec bash record_rosbag.bash"]
+
+  # rosbag record 
+  rviz2:
+    <<: *autoware-base 
+    container_name: "aic-2025-rviz2"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_rviz.bash vehicle"]
 
   # Aic-build service
   aic-build:
@@ -79,3 +94,25 @@ services:
     container_name: "aic-2025-build"
     stop_grace_period: 0.1s
     command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']
+
+  # Driver build service
+  driver-build:
+    tty: true
+    stdin_open: true
+    image: "ghcr.io/tier4/racing_kart_interface:latest-experiment"
+    container_name: "racing_kart_interface-build"
+    stop_grace_period: 0.1s
+    privileged: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - USER=${USER}
+    volumes:
+      - /dev/vcu:/dev/vcu
+      - /dev/gnss:/dev/gnss
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev/dri:/dev/dri
+      - ../../racing_kart_interface:/workspace
+    group_add:
+      - dialout
+    command: ['build']

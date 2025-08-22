@@ -4,5 +4,7 @@ iproute2
 wmctrl
 ros-humble-rqt-tf-tree
 ros-humble-rqt-graph
+ros-humble-usb-cam
+ros-humble-ublox
 terminator
 arp-scan
