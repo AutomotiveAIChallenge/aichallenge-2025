@@ -78,7 +78,7 @@ services:
     <<: *autoware-base 
     init: true
     container_name: "aic-2025-rosbag"
-    stop_grace_period: 5.0s
+    stop_grace_period: 10.0s
     command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /vehicle && exec bash record_rosbag.bash"]
 
   # rosbag record 
