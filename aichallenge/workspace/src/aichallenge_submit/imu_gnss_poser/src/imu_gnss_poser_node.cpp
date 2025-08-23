@@ -37,7 +37,7 @@ private:
         };
         msg->pose.covariance[7*0] = adjustPositionCovariance(msg->pose.covariance[7*0]);
         msg->pose.covariance[7*1] = adjustPositionCovariance(msg->pose.covariance[7*1]);
-        msg->pose.covariance[7*2] = adjustPositionCovariance(msg->pose.covariance[7*2]) * 10.0;
+        msg->pose.covariance[7*2] = adjustPositionCovariance(msg->pose.covariance[7*2]);
         msg->pose.covariance[7*3] = 100000.0;
         msg->pose.covariance[7*4] = 100000.0;
         msg->pose.covariance[7*5] = 100000.0;
