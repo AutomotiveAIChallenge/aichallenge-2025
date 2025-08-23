@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-
+    <!-- Safety System -->
+    <group>
+        <push-ros-namespace namespace="safety"/>
+        <!-- Route Deviation Safety Monitor -->
+        <node pkg="aichallenge_system_launch" exec="route_safety_monitor.py" name="route_safety_monitor" output="screen">
+            <param name="enable_visualization" value="false"/>
+        </node>
+    </group>
 </launch>

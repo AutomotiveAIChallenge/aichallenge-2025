@@ -3,6 +3,15 @@
     <!-- Workaround because the simulator cannot use the service. -->
     <node pkg="aichallenge_system_launch" exec="control_mode_adapter.py" output="screen"/>
 
+    <!-- Safety System Test -->
+    <group>
+        <push-ros-namespace namespace="safety"/>
+        <!-- Route Deviation Safety Monitor -->
+        <!-- <node pkg="aichallenge_system_launch" exec="route_safety_monitor.py" name="route_safety_monitor" output="screen" launch-prefix="bash -c 'sleep 50; $0 $@'">
+            <param name="enable_visualization" value="true"/>
+        </node> -->
+    </group>
+
     <!-- Adaptors for AWSIM -->
     <group>
         <include file="$(find-pkg-share aichallenge_awsim_adapter)/launch/aichallenge_awsim_adapter.launch.xml"/>
