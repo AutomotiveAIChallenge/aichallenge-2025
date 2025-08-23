@@ -3,7 +3,7 @@
   <!-- Sensing -->
   <group>
     <push-ros-namespace namespace="sensing"/>
-\    <group>
+    <group>
       <push-ros-namespace namespace="camera"/>
         <node pkg="usb_cam" exec="usb_cam_node_exe" name="usb_cam_node" output="screen">
         <param name="video_device" value="/dev/video0"/>
