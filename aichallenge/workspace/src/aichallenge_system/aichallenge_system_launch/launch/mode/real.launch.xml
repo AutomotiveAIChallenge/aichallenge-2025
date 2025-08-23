@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <!-- Sensing -->
-  <group>
+    <!--<group>
     <push-ros-namespace namespace="sensing"/>
     <group>
       <push-ros-namespace namespace="camera"/>
@@ -13,5 +13,5 @@
         <param name="framerate" value="1.0"/>
         </node>
     </group>
-  </group>
+  </group> -->
 </launch>
