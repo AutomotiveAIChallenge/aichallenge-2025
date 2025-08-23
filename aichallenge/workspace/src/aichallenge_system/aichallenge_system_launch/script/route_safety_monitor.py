@@ -169,9 +169,9 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
         # 監視タイマー (0.5秒ごと)
         self.monitoring_timer = self.create_timer(0.5, self.monitor_position)
         
-        self.get_logger().info("Route Deviation Safety Monitor started")
+        self.get_logger().debug("Route Deviation Safety Monitor started")
         if self.enable_viz:
-            self.get_logger().info("Visualization enabled - saving route_status.png")
+            self.get_logger().debug("Visualization enabled - saving route_status.png")
         
     def position_callback(self, msg: Odometry):
         self.current_position = (msg.pose.pose.position.x, msg.pose.pose.position.y)
@@ -187,17 +187,17 @@ class RouteDeviationSafetyMonitorNode(rclpy.node.Node):
         # ルート逸脱監視
         if is_in_lane:
             if self.deviation_start_time is not None:
-                self.get_logger().info("Returned to lane")
+                self.get_logger().debug("Returned to lane")
             self.deviation_start_time = None
             self.emergency_sent = False
         elif not self.deviation_start_time:
             self.deviation_start_time = current_time
             self.emergency_sent = False
-            self.get_logger().error("Route deviation detected")
+            self.get_logger().debug("Route deviation detected")
         elif current_time - self.deviation_start_time >= 3.0 and not self.emergency_sent:
             self.safety_control_pub.publish(Bool(data=True))
             self.emergency_sent = True
-            self.get_logger().error("Emergency signal sent - route deviation for 3+ seconds")
+            self.get_logger().debug("Emergency signal sent - route deviation for 3+ seconds")
         
         # 可視化
         if self.enable_viz:
