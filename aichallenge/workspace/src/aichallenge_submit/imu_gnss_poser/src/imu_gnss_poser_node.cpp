@@ -29,10 +29,15 @@ private:
 
     void gnss_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg) {
 
-        // this covariance means orientation is not reliable
-        msg->pose.covariance[7*0] = 0.1;
-        msg->pose.covariance[7*1] = 0.1;
-        msg->pose.covariance[7*2] = 0.1;
+        // this covariance changes are based on GNSS accuracy
+        auto adjustPositionCovariance = [](double value) -> double {
+            if (value <= 0.1) return 0.1;
+            if (value <= 0.5) return 0.25;
+            return 100.0;
+        };
+        msg->pose.covariance[7*0] = adjustPositionCovariance(msg->pose.covariance[7*0]);
+        msg->pose.covariance[7*1] = adjustPositionCovariance(msg->pose.covariance[7*1]);
+        msg->pose.covariance[7*2] = adjustPositionCovariance(msg->pose.covariance[7*2]);
         msg->pose.covariance[7*3] = 100000.0;
         msg->pose.covariance[7*4] = 100000.0;
         msg->pose.covariance[7*5] = 100000.0;
