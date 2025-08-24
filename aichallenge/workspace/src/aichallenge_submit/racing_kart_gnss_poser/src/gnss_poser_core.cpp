@@ -93,8 +93,12 @@ void GNSSPoser::callbackNavSatFix(
     return;
   }
 
+  // Override altitude
+  auto nav_sat_fix_modified = *nav_sat_fix_msg_ptr;
+  nav_sat_fix_modified.altitude = 43.0;
+
   // get position in coordinate_system
-  const auto gnss_stat = convert(*nav_sat_fix_msg_ptr, coordinate_system_);
+  const auto gnss_stat = convert(nav_sat_fix_modified, coordinate_system_);
   const auto position = getPosition(gnss_stat);
 
   // calc median position
