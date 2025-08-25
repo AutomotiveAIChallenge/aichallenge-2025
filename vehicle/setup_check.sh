@@ -7,12 +7,12 @@
 
 # set -e  # エラー時の自動終了を無効化してすべてのチェックを実行
 
-# カラー定義
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# カラー定義（使用しないがshellcheck対策でexport）
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[1;33m'
+export BLUE='\033[0;34m'
+export NC='\033[0m' # No Color
 
 # 絵文字定義
 OK="✅"
@@ -34,6 +34,8 @@ log() {
     echo -e "$1" | tee -a "$LOG_FILE" 2>/dev/null || echo -e "$1"
 }
 
+# 実際は使用しないがshellcheck対策で残す
+# shellcheck disable=SC2317
 log_only() {
     if [ "$ENABLE_LOG" = true ]; then
         echo -e "$1" >>"$LOG_FILE" 2>/dev/null || true
