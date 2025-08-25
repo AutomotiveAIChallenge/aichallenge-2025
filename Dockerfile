@@ -9,7 +9,6 @@ RUN xargs -a /tmp/packages.txt apt-get install -y --no-install-recommends
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -r requirements.txt
 
 # PATH="$PATH:/root/.local/bin"
 # PATH="/usr/local/cuda/bin:$PATH"
