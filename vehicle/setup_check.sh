@@ -214,12 +214,12 @@ check_network() {
         record_result "fail"
     fi
 
-    # リバースSSH確認
-    if ss -ltnp | grep -q ":10022 "; then
-        log "${OK} Reverse SSH port 10022 is listening"
+    # リバースSSHサービス状態確認
+    if systemctl is-active --quiet reverse-ssh.service; then
+        log "${OK} reverse-ssh.service is active (running)"
         record_result "pass"
     else
-        log "${WARN} Reverse SSH port 10022 not listening"
+        log "${WARN} reverse-ssh.service is not active"
         log "   Fix: sudo systemctl start reverse-ssh.service"
         record_result "warn"
     fi
@@ -241,26 +241,6 @@ check_network() {
 check_services() {
     log "${INFO} 3. System Services Check"
     log "----------------------------------------"
-
-    # 必須サービス確認
-    check_systemd_service "sshd" "required"
-
-    # ネットワーク管理確認（NetworkManager OR systemd-networkd）
-    if systemctl is-active --quiet "NetworkManager" 2>/dev/null; then
-        log "${OK} NetworkManager is active (network management)"
-        record_result "pass"
-    elif systemctl is-active --quiet "systemd-networkd" 2>/dev/null; then
-        log "${OK} systemd-networkd is active (network management)"
-        record_result "pass"
-    else
-        log "${WARN} No active network management service found"
-        record_result "warn"
-    fi
-
-    # 通信関連サービス
-    check_systemd_service "mosquitto" "optional"
-    check_systemd_service "telegraf" "optional"
-    check_systemd_service "zenohd" "optional"
 
     # RTK関連サービス
     check_systemd_service "rtk_str2str.service" "optional"
@@ -335,16 +315,6 @@ check_docker() {
 check_known_issues() {
     log "${INFO} 5. Known Issues Prevention Check"
     log "----------------------------------------"
-
-    # cyclonedds確認
-    if command -v cyclonedx >/dev/null 2>&1 || dpkg -l | grep -q cyclonedx; then
-        log "${OK} CycloneDDS package seems available"
-        record_result "pass"
-    else
-        log "${WARN} CycloneDDS might be missing"
-        log "   Fix: sudo apt update && sudo apt install ros-humble-cyclonedx"
-        record_result "warn"
-    fi
 
     # バッテリー警告
     log "${WARN} Remember: Check battery level manually (display values unreliable)"
