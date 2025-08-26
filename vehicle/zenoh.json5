@@ -53,16 +53,7 @@
       ////               Use 'deny' to allow all except the specified interfaces. If an interface type is set to an empty list
       ////               or is not specified at all, it means that ALL such interface are allowed.
       allow: {
-        publishers: [
-          "/localization/kinematic_state",
-          "/vehicle/.*",
-          "/control/.*",
-          "/map/.*",
-          "/sensing/gnss/nav_sat_fix",
-          "/sensing/gnss/navpvt",
-          "/sensing/imu/imu_raw",
-          "/sensing/vehicle_velocity_converter/twist_with_covariance"
-        ],
+        publishers: [".*"],
         subscribers: [
           "/racing_kart/joy",
           "/initialpose"
