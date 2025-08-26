@@ -71,7 +71,7 @@ ping -c 3 8.8.8.8
 #### リバースSSH
 ```bash
 # 手動確認コマンド
-ss -ltnp | grep ":10022 "
+systemctl is-active --quiet reverse-ssh.service
 sudo systemctl status reverse-ssh.service
 ```
 
@@ -85,32 +85,21 @@ nc -zv 57.180.63.135 7447
 **期待する結果:**
 - ✅ `Internet connectivity (8.8.8.8)`
 - ✅ `Zenoh server connectivity (57.180.63.135:7447)`
-- ⚠️ `Reverse SSH port 10022 not listening`
+- ✅ `reverse-ssh.service is active (running)`
+- ⚠️ `reverse-ssh.service is not active`
 
 ---
 
 ### 3. システムサービス確認
 
-#### 必須サービス
+#### RTK関連サービス（optional）
 ```bash
 # 手動確認コマンド
-systemctl status sshd
-systemctl status NetworkManager
-```
-
-#### 通信関連サービス（optional）
-```bash
-# 手動確認コマンド
-systemctl status mosquitto.service
-systemctl status telegraf.service
-systemctl status zenohd
 systemctl status rtk_str2str.service
 ```
 
 **期待する結果:**
-- ✅ `Service sshd is active`
-- ✅ `NetworkManager is active (network management)`
-- ⚠️ `Service mosquitto is not active (optional)`
+- ⚠️ `Service rtk_str2str.service is not active (optional)`
 
 ---
 
@@ -144,12 +133,6 @@ groups $USER
 ### 5. 既知問題予防チェック
 
 #### past_log.mdからの予防項目
-
-**CycloneDDS確認**
-```bash
-# 手動確認コマンド
-dpkg -l | grep cyclonedx
-```
 
 **バッテリー管理注意**
 - ⚠️ `Remember: Check battery level manually (display values unreliable)`
@@ -199,17 +182,12 @@ Time: 2025年  8月 25日 月曜日 22:54:19 JST
 ℹ️ 2. Network & Communication Check
 ----------------------------------------
 ✅ Internet connectivity (8.8.8.8)
-⚠️ Reverse SSH port 10022 not listening
+⚠️ reverse-ssh.service is not active
    Fix: sudo systemctl start reverse-ssh.service
 ✅ Zenoh server connectivity (57.180.63.135:7447)
 
 ℹ️ 3. System Services Check
 ----------------------------------------
-✅ Service sshd is active
-✅ NetworkManager is active (network management)
-⚠️ Service mosquitto is not active (optional)
-⚠️ Service telegraf is not active (optional)
-⚠️ Service zenohd is not active (optional)
 ⚠️ Service rtk_str2str.service is not active (optional)
 
 ℹ️ 4. Docker & Environment Check
@@ -223,7 +201,6 @@ Time: 2025年  8月 25日 月曜日 22:54:19 JST
 
 ℹ️ 5. Known Issues Prevention Check
 ----------------------------------------
-✅ CycloneDDS package seems available
 ⚠️ Remember: Check battery level manually (display values unreliable)
 ⚠️ Remember: Avoid direct sunlight exposure for batteries
 ℹ️ Recommendation: Wait outside for GNSS Fix before driving
@@ -237,9 +214,9 @@ Time: 2025年  8月 25日 月曜日 22:54:19 JST
 ========================================
 📊 Check Results Summary
 ========================================
-Total checks: 18
-✅ Passed: 12
-⚠️ Warnings: 6
+Total checks: 15
+✅ Passed: 10
+⚠️ Warnings: 5
 ❌ Failed: 3
 
 ❌ Critical issues found! Fix failures before running vehicle mode.
