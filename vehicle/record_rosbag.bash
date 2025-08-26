@@ -56,7 +56,7 @@ TOPICS=(
     "/sensing/camera/image_raw"
 )
 
-ros2 bag record "${TOPICS[@]}" &
+ros2 bag record -s mcap "${TOPICS[@]}" &
 
 # バックグラウンドで実行したプロセスのID (PID) を取得する
 ROSBAG_PID=$!
