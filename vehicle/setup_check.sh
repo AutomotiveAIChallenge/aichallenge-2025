@@ -214,6 +214,26 @@ check_network() {
         record_result "fail"
     fi
 
+    # ネットワーク接続の確認 (nmcli)
+    # KDDI有線接続の確認
+    if nmcli connection show --active | grep -q "enx0efa4998c93c"; then
+        log "${OK} KDDI connection (enx0efa4998c93c) is active."
+        record_result "pass"
+    else
+        log "${FAIL} No active KDDI connection (enx0efa4998c93c)."
+        log "   Fix: Check the physical cable and network configuration."
+        record_result "fail"
+    fi
+    # Wi-Fi接続の確認
+    if nmcli connection show --active | grep -q "wlx54077d85a4e8"; then
+        log "${OK} Netgear Wi-Fi connection (wlx54077d85a4e8) is active."
+        record_result "pass"
+    else
+        log "${FAIL} No active Netgear Wi-Fi connection (wlx54077d85a4e8)."
+        log "   Fix: Check the Wi-Fi settings."
+        record_result "fail"
+    fi
+
     # リバースSSHサービス状態確認
     if systemctl is-active --quiet reverse-ssh.service; then
         log "${OK} reverse-ssh.service is active (running)"
@@ -236,7 +256,6 @@ check_network() {
 
     log ""
 }
-
 # 3. システムサービス確認
 check_services() {
     log "${INFO} 3. System Services Check"
