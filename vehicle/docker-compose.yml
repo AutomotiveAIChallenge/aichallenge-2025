@@ -47,25 +47,11 @@ x-racing_kart_interface-base: &racing_kart_interface-base
 services:
   # Zenoh service
   zenoh:
-    image: "aichallenge-2025-dev-${USER}"
+    <<: *autoware-base
     container_name: "zenoh"
     stop_grace_period: 0.1s
-    privileged: true
-    network_mode: host
-    environment:
-      - DISPLAY=${DISPLAY}
-      - ROS_DISTRO=humble
-      - USER=${USER}
-      - TZ=Asia/Tokyo
-    volumes:
-      - ../aichallenge:/aichallenge
-      - ./:/vehicle
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - /dev/dri:/dev/dri
-    devices:
-      - /dev/dri
     working_dir: /vehicle
-    command: zenoh-bridge-ros2dds client -e tcp/57.180.63.135:7447 -c /vehicle/zenoh.json5
+    command: ["bash", "-c", "zenoh-bridge-ros2dds client -e tcp/57.180.63.135:7447 -c /vehicle/zenoh.json5"]
 
   # Driver service
   # Driver build service
