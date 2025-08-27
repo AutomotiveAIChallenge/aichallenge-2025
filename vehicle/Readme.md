@@ -89,7 +89,7 @@ make all
 ```
 
 ### サービス停止
-
+どれか１つでもコンテナが死んだらdocker compose downですべて落とすこと
 ```bash
 #rosbagのみ停止
 docker compose down rosbag
