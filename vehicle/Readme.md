@@ -91,8 +91,8 @@ make all
 ### サービス停止
 
 ```bash
-# ROSBag停止 + 全コンテナ停止（5秒待機後）
-make stop-rosbag
+#rosbagのみ停止
+docker compose rm -sf rosbag
 
 # 全コンテナ停止
 docker compose down

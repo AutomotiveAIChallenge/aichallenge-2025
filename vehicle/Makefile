@@ -88,10 +88,3 @@ rviz2:
 all: download
 	docker compose up -d aic-build driver zenoh autoware rosbag
 	docker compose logs -f aic-build driver zenoh autoware rosbag
-
-stop-rosbag:
-	docker compose stop rosbag
-	docker compose rm -f rosbag
-
-stop-all:
-	docker compose down
