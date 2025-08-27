@@ -92,7 +92,7 @@ make all
 
 ```bash
 #rosbagのみ停止
-docker compose rm -sf rosbag
+docker compose down rosbag
 
 # 全コンテナ停止
 docker compose down
