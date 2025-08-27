@@ -74,7 +74,7 @@
           "/tf_static",
           "/vehicle/status/gear_status",
           "/vehicle/status/steering_status",
-          "/vehicle/status/velocity_status",
+          "/vehicle/status/velocity_status"
         ],
         service_servers: [".*"],
         service_clients: [".*"],
