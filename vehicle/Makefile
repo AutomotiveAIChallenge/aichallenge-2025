@@ -91,5 +91,7 @@ all: download
 
 stop-rosbag:
 	docker compose stop rosbag
-	sleep 5
+	docker compose rm -f rosbag
+
+stop-all:
 	docker compose down
