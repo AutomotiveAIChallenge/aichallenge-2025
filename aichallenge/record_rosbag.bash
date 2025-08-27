@@ -56,7 +56,7 @@ TOPICS=(
     "/system/system_monitor/cpu_monitor/cpu_usage"
     "/tf"
     "/tf_static"
-    /vehicle/emergency/is_route_deviation
+    "/vehicle/emergency/is_route_deviation"
     "/vehicle/status/control_mode"
     "/vehicle/status/gear_status"
     "/vehicle/status/hazard_lights_status"
