@@ -33,6 +33,8 @@ x-racing_kart_interface-base: &racing_kart_interface-base
     - USER=${USER}
     - TZ=Asia/Tokyo
     - ROS_DISTRO=humble
+    - NTRIP_USERNAME=${NTRIP_USERNAME}
+    - NTRIP_PASSWORD=${NTRIP_PASSWORD}
   volumes:
     - /dev/vcu:/dev/vcu
     - /dev/gnss:/dev/gnss
