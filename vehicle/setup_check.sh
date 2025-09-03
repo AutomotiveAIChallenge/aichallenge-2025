@@ -216,20 +216,20 @@ check_network() {
 
     # ネットワーク接続の確認 (nmcli)
     # KDDI有線接続の確認
-    if nmcli connection show --active | grep -q "enx0efa4998c93c"; then
-        log "${OK} KDDI connection (enx0efa4998c93c) is active."
+    if nmcli connection show --active | grep -q "fs050w-wired"; then
+        log "${OK} KDDI connection (fs050w-wired) is active."
         record_result "pass"
     else
-        log "${FAIL} No active KDDI connection (enx0efa4998c93c)."
+        log "${FAIL} No active KDDI connection (fs050w-wired)."
         log "   Fix: Check the physical cable and network configuration."
         record_result "fail"
     fi
     # Wi-Fi接続の確認
-    if nmcli connection show --active | grep -q "wlx54077d85a4e8"; then
-        log "${OK} Netgear Wi-Fi connection (wlx54077d85a4e8) is active."
+    if nmcli connection show --active | grep -q "netgear-wifi"; then
+        log "${OK} Netgear Wi-Fi connection (netgear-wifi) is active."
         record_result "pass"
     else
-        log "${FAIL} No active Netgear Wi-Fi connection (wlx54077d85a4e8)."
+        log "${FAIL} No active Netgear Wi-Fi connection (netgear-wifi)."
         log "   Fix: Check the Wi-Fi settings."
         record_result "fail"
     fi
