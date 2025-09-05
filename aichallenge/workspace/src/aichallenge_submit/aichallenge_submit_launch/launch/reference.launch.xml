@@ -57,6 +57,8 @@
         <arg name="output_topic_gnss_pose" value="pose"/>
         <arg name="output_topic_gnss_fixed" value="gnss_fixed"/>
         <arg name="output_topic_gnss_pose_cov" value="pose_with_covariance"/>
+        <arg name="gnss_change_threshold" value="0.1"/>
+        <arg name="buff_epoch" value="20"/>
       </include>
     </group>
   </group>
