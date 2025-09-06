@@ -120,7 +120,7 @@
       ////                           When false (or for BERST_EFFORT DDS Writers), CongestionControl::Drop
       ////                           is used, meaning the route might drop some data in case of congestion.
       ////
-      // reliable_routes_blocking: true,
+      reliable_routes_blocking: false,
 
       ////
       //// queries_timeout: Timeouts configuration for various Zenoh queries.
