@@ -295,26 +295,22 @@ Visualization Manager:
   Global Options:
     Background Color: 10; 10; 10
     Fixed Frame: viewer
-    Frame Rate: 30
+    Frame Rate: 20
   Name: root
   Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/FocusCamera
     - Class: rviz_default_plugins/SetInitialPose
       Covariance x: 0.25
       Covariance y: 0.25
       Covariance yaw: 0.06853891909122467
       Topic:
-        Depth: 1
+        Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /initialpose
-    - Class: rviz_default_plugins/SetGoal
-      Topic:
-        Depth: 1
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /planning/mission_planning/goal
+        Reliability Policy: Reliable
+        Value: initialpose
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
