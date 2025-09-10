@@ -5,3 +5,4 @@
 *.db3
 rosbag2*/
 *.pyc
+vehicle/.env
