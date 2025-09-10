@@ -30,7 +30,12 @@ rosbag-all:
 	sleep 5
 	tmux new-session -d -s rosbag  "bash -c ' \
 		source ~/msg_install/setup.bash && \
-		ros2 bag record -a -s mcap -d 60 -o log/rosbag2_$$(date +%Y_%m_%d_%H_%M_%S) --compression-mode file --compression-format zstd'"
+		ros2 bag record -a \
+			-s mcap \
+			-d 60 \
+			-o log/rosbag2_$$(date +%Y_%m_%d_%H_%M_%S) \
+			--compression-mode file \
+			--compression-format zstd'"
 
 # Autowareとracing kartとzenohの起動
 run-full-system:
