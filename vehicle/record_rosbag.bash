@@ -60,7 +60,7 @@ ros2 bag record \
     -s mcap \
     "${TOPICS[@]}" \
     -d 60 \
-    -o log/rosbag2_$(date +%Y_%m_%d_%H_%M_%S) \
+    -o "log/rosbag2_$(date +%Y_%m_%d_%H_%M_%S)" \
     --compression-mode file \
     --compression-format zstd \
     &

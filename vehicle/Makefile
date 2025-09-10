@@ -38,11 +38,11 @@ rosbag-all:
 			--compression-format zstd'"
 
 # Autowareとracing kartとzenohの起動
+# TODO(kubota): 事前練習のときはdocker compose up -d rosbagに戻す
 run-full-system:
 	docker compose up -d driver
 	docker compose up -d autoware
 	$(MAKE) rosbag-all
-# docker compose up -d rosbag
 	sleep 5
 	docker compose up -d zenoh
 	docker compose logs -f autoware driver zenoh 2>&1 | tee log/full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
