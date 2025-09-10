@@ -56,7 +56,7 @@ TOPICS=(
     "/sensing/camera/image_raw"
 )
 
-ros2 bag record -s mcap "${TOPICS[@]}" &
+ros2 bag record -s mcap "${TOPICS[@]}"  -d 60 -o rosbag/rosbag2_$$(date +%Y_%m_%d_%H_%M_%S) --compression-mode file --compression-format zstd &
 
 # バックグラウンドで実行したプロセスのID (PID) を取得する
 ROSBAG_PID=$!
