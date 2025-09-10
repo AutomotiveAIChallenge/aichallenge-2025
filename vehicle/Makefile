@@ -24,6 +24,13 @@ rosbag:
 	docker compose up -d rosbag 
 	docker compose logs -f rosbag
 
+# aichallege-2025とracing_kart_interface両方のtopicを記録（実験用）
+rosbag-all:
+	tmux new-session -d -s rosbag  "bash -c ' \
+		source ~/msg_install/install/setup.bash && \
+		ros2 bag record -a; \
+		exec bash'"
+
 # Autowareとracing kartとzenohの起動
 run-full-system:
 	docker compose up -d autoware driver zenoh
