@@ -62,7 +62,7 @@
   </group>
 
     <!-- Localization -->
-  <let name="pose_additional_delay_var" value="0.3" />
+  <let name="pose_additional_delay_var" value="0.0" />
   <group>
     <push-ros-namespace namespace="localization"/>
     <include file="$(find-pkg-share gyro_odometer)/launch/gyro_odometer.launch.xml">
@@ -130,8 +130,8 @@
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/>
 
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
-    <param name="use_external_target_vel" value="false"/>
-    <param name="external_target_vel" value="10.0"/>
+    <param name="use_external_target_vel" value="true"/>
+    <param name="external_target_vel" value="5.56"/>
     <param name="lookahead_gain" value="0.5"/>
     <param name="lookahead_min_distance" value="3.5"/>
     <param name="speed_proportional_gain" value="1.0"/>
