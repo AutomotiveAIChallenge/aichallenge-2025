@@ -24,10 +24,28 @@ rosbag:
 	docker compose up -d rosbag 
 	docker compose logs -f rosbag
 
+# aichallege-2025とracing_kart_interface両方のtopicを記録（実験用）
+rosbag-all:
+	-tmux send-keys -t rosbag C-c
+	sleep 5
+	tmux new-session -d -s rosbag  "bash -c ' \
+		source ~/msg_install/setup.bash && \
+		ros2 bag record -a \
+			-s mcap \
+			-d 60 \
+			-o log/rosbag2_$$(date +%Y_%m_%d_%H_%M_%S) \
+			--compression-mode file \
+			--compression-format zstd'"
+
 # Autowareとracing kartとzenohの起動
+# TODO(kubota): 事前練習のときはdocker compose up -d rosbagに戻す
 run-full-system:
-	docker compose up -d autoware driver zenoh
-	docker compose logs -f autoware driver zenoh 2>&1 | tee full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
+	docker compose up -d driver
+	docker compose up -d autoware
+	$(MAKE) rosbag-all
+	sleep 5
+	docker compose up -d zenoh
+	docker compose logs -f autoware driver zenoh 2>&1 | tee log/full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
 
 # Download submission data by asking for credentials interactively
 # Usage:
