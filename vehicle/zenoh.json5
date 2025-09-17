@@ -193,6 +193,16 @@
   ////
   mode: "client",
   "transport": {
+    unicast:{
+      compression: {
+        enabled: true,
+      },
+    },
+    multicast:{
+      compression: {
+        enabled: true,
+      },
+    },
     "link": {
       "tls": {
         "root_ca_certificate": "/remote/tls/server/minica.pem",
