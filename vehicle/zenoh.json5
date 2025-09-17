@@ -192,6 +192,17 @@
   //// mode: The bridge's mode (router, peer or client)
   ////
   mode: "client",
+  "transport": {
+    "link": {
+      "tls": {
+        "root_ca_certificate": "/remote/tls/server/minica.pem",
+        "connect_private_key": "/remote/tls/client/key.pem",
+        "connect_certificate": "/remote/tls/client/cert.pem",
+        "enable_mtls": true,
+        "close_link_on_expiration": true
+      }
+    }
+  },
 
   ////
   //// Which endpoints to connect to. E.g. tcp/localhost:7447.

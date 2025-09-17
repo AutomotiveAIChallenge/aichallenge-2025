@@ -53,7 +53,7 @@ services:
     container_name: "zenoh"
     stop_grace_period: 0.1s
     working_dir: /vehicle
-    command: ["bash", "-c", "zenoh-bridge-ros2dds client -e tcp/57.180.63.135:7447 -c /vehicle/zenoh.json5"]
+    command: ["bash", "-c", "zenoh-bridge-ros2dds client -e tls/57.180.63.135:7447 -c /vehicle/zenoh.json5"]
 
   # Driver service
   # Driver build service

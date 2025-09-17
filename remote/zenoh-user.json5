@@ -192,7 +192,17 @@
   //// mode: The bridge's mode (router, peer or client)
   ////
   mode: "client",
-
+  "transport": {
+    "link": {
+      "tls": {
+        "root_ca_certificate": "./tls/server/minica.pem",
+        "connect_private_key": "./tls/client/key.pem",
+        "connect_certificate": "./tls/client/cert.pem",
+        "enable_mtls": true,
+        "close_link_on_expiration": true
+      }
+    }
+  },
   ////
   //// Which endpoints to connect to. E.g. tcp/localhost:7447.
   //// By configuring the endpoints, it is possible to tell zenoh which remote router or other zenoh-bridge-ros2dds to connect to at startup.
