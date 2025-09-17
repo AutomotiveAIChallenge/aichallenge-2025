@@ -3,6 +3,7 @@ x-autoware-base: &autoware-base
   privileged: true
   pull_policy: never
   network_mode: host
+  user: "1001:1001"
   environment:
     - DISPLAY=${DISPLAY}
     - USER=${USER}
