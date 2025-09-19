@@ -91,9 +91,3 @@ services:
     container_name: "aic-2025-build"
     stop_grace_period: 0.1s
     command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']
-
-  driver-build:
-    <<: *racing_kart_interface-base
-    container_name: "racing_kart_interface-build"
-    stop_grace_period: 0.1s
-    command: ['build']
