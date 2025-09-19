@@ -24,21 +24,8 @@ rosbag:
 	docker compose up -d rosbag 
 	docker compose logs -f rosbag
 
-# aichallege-2025とracing_kart_interface両方のtopicを記録（実験用）
 rosbag-all:
-	-tmux send-keys -t rosbag C-c
-	sleep 5
-	tmux new-session -d -s rosbag  "bash -c ' \
-		source ~/msg_install/setup.bash && \
-		ros2 bag record -a \
-			-s mcap \
-			-d 60 \
-			-o log/rosbag2_$$(date +%Y_%m_%d_%H_%M_%S) \
-			--compression-mode file \
-			--compression-format zstd'"
-
-# Autowareとracing kartとzenohの起動
-# TODO(kubota): 事前練習のときはdocker compose up -d rosbagに戻す
+	docker compose up -d rosbag
 run-full-system:
 	docker compose up -d driver
 	docker compose up -d autoware
