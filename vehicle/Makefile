@@ -91,10 +91,6 @@ build-autoware:
 	docker compose up -d aic-build
 	docker compose logs -f aic-build
 
-# driverのbuildのみ
-build-driver:
-	docker compose up -d driver-build
-	docker compose logs -f driver-build
 
 # rvizの起動・ログ表示
 rviz2:
