@@ -1,4 +1,7 @@
 SHELL := /bin/bash
+UID := $(shell id -u)
+GID := $(shell id -g)
+export UID GID
 # 既にコンテナが立ち上がっている場合はログの表示を行います。
 # autowareのみ起動・ログ表示
 autoware:
