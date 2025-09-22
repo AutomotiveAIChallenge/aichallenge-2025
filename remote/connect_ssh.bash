@@ -33,7 +33,7 @@ esac
 
 # 3. 選択されたポートでautosshを実行
 echo "Connecting... Target Vehicle: $TARGET_ID"
-autossh -ACY -M 0 -p "$PORT" \
+autossh -AC -M 0 -p "$PORT" \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
     tier4@57.180.63.135
