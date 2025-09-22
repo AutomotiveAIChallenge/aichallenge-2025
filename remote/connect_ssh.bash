@@ -34,7 +34,7 @@ esac
 
 # 3. 選択されたポートとユーザーでautosshを実行
 echo "Connecting... Target Vehicle: $TARGET_ID, User: $USERNAME"
-autossh -ACY -M 0 -p "$PORT" \
+autossh -AC -M 0 -p "$PORT" \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
     "${USERNAME}@57.180.63.135"
