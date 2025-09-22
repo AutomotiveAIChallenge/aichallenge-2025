@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # 1. 引数が指定されているかチェック
-if [ -z "$1" ]; then
-    echo "エラー: 接続先を指定してください。"
-    echo "使用法: $0 [A2|A3|A6|A7]"
+if [ $# -ne 2 ]; then
+    echo "エラー: 接続先とユーザー名を指定してください。"
+    echo "使用法: $0 [A2|A3|A6|A7] ユーザー名"
     exit 1
 fi
 
 TARGET_ID=$1
+USERNAME=$2
 PORT=""
 
 # 2. 引数に応じてポート番号を設定
@@ -31,9 +32,9 @@ A7)
     ;;
 esac
 
-# 3. 選択されたポートでautosshを実行
-echo "Connecting... Target Vehicle: $TARGET_ID"
+# 3. 選択されたポートとユーザーでautosshを実行
+echo "Connecting... Target Vehicle: $TARGET_ID, User: $USERNAME"
 autossh -AC -M 0 -p "$PORT" \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
-    tier4@57.180.63.135
+    "${USERNAME}@57.180.63.135"
