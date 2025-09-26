@@ -30,7 +30,7 @@ run-full-system:
 	docker compose up -d driver
 	docker compose up -d autoware
 	$(MAKE) rosbag-all
-	sleep 5
+	sleep 15
 	docker compose up -d zenoh
 	docker compose logs -f autoware driver zenoh 2>&1 | tee log/full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
 
