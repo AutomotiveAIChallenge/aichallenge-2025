@@ -55,6 +55,14 @@ services:
     working_dir: /vehicle
     command: ["bash", "-c", "zenoh-bridge-ros2dds client -e tls/57.180.63.135:7447 -c /vehicle/zenoh.json5 -n /${VEHICLE_ID}"]
 
+  
+  zenoh-remote:
+    <<: *autoware-base
+    container_name: "zenoh"
+    stop_grace_period: 0.1s
+    working_dir: /vehicle
+    command: ["bash", "-c", "zenoh-bridge-ros2dds client -e tls/57.180.63.135:7447 -c /remote/zenoh-user.json5"]
+
   # Driver service
   # Driver build service
   driver:

@@ -15,6 +15,11 @@ zenoh:
 	docker compose up -d zenoh
 	docker compose logs -f zenoh
 
+
+zenoh-remote:
+	docker compose up -d zenoh-remote
+	docker compose logs -f zenoh-remote
+
 # racing_kart_interfaceのbashを起動
 driver-bash:
 	docker compose run driver bash
