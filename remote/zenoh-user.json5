@@ -197,9 +197,9 @@
     },
     "link": {
       "tls": {
-        "root_ca_certificate": "/remote/tls/server/minica.pem",
-        "connect_private_key": "/remote/tls/client/key.pem",
-        "connect_certificate": "/remote/tls/client/cert.pem",
+        "root_ca_certificate": "./tls/server/minica.pem",
+        "connect_private_key": "./tls/client/key.pem",
+        "connect_certificate": "./tls/client/cert.pem",
         "enable_mtls": true,
         "close_link_on_expiration": true
       }
