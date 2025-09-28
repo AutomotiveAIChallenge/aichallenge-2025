@@ -7,3 +7,4 @@ ros-humble-rqt-graph
 ros-humble-rosbag2-storage-mcap
 terminator
 arp-scan
+ros-humble-rosbag2-storage-mcap
