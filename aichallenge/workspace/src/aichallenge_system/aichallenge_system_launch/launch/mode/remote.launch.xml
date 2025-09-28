@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- Essential parameters -->
+  <arg name="vehicle_id" default="$(env VEHICLE_ID default)" description="vehicle specific ID"/>
+  <arg name="simulation" default = "false" description="used for sensor kit param"/>
+  <arg name="use_sim_time" default="false"/>
+  <arg name="map_path" default="$(find-pkg-share aichallenge_submit_launch)/map"/>
+  <arg name="vehicle_model" default="racing_kart"  description="vehicle model name"/>
+  <arg name="sensor_model" default="racing_kart_sensor_kit" description="sensor model name"/>
+  <!-- Optional parameters -->
+  <!-- Map -->
+  <arg name="lanelet2_map_file" default="lanelet2_map.osm" description="lanelet2 map file name"/>
+
+  <!-- Global parameters -->
+  <group scoped="false">
+    <include file="$(find-pkg-share global_parameter_loader)/launch/global_params.launch.py">
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
+      <arg name="vehicle_model" value="$(var vehicle_model)"/>
+    </include>
+  </group>
+
+  <group>
+    <arg name="model_file" default="$(find-pkg-share tier4_vehicle_launch)/urdf/vehicle.xacro" description="path to the file of model settings (*.xacro)"/>
+    <arg name="config_dir" default="$(find-pkg-share racing_kart_sensor_kit_description)/config"/>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" exec="robot_state_publisher">
+      <param name="robot_description" value="$(command 'xacro $(var model_file) vehicle_model:=$(var vehicle_model) sensor_model:=$(var sensor_model) config_dir:=$(var config_dir) simulation:=$(var simulation)' 'warn')"/>
+    </node>
+  </group>
+  <!-- Map -->
+  <group>
+    <push-ros-namespace namespace="map"/>
+
+    <!-- map_container -->
+    <node_container pkg="rclcpp_components" exec="component_container" name="map_container" namespace="">
+
+      <!-- map_loader::Lanelet2MapLoaderNode -->
+      <composable_node pkg="map_loader" plugin="Lanelet2MapLoaderNode" name="lanelet2_map_loader" namespace="">
+        <remap from="output/lanelet2_map" to="vector_map" />
+        <param name="lanelet2_map_path" value="$(var map_path)/$(var lanelet2_map_file)" />
+        <param from="$(find-pkg-share aichallenge_submit_launch)/config/map/lanelet2_map_loader.param.yaml" />
+        <extra_arg name="use_intra_process_comms" value="false" />
+      </composable_node>
+
+      <!-- map_loader::Lanelet2MapVisualizationNode -->
+      <composable_node pkg="map_loader" plugin="Lanelet2MapVisualizationNode" name="lanelet2_map_visualization" namespace="">
+        <remap from="input/lanelet2_map" to="vector_map" />
+        <remap from="output/lanelet2_map_marker" to="vector_map_marker" />
+        <param name="lanelet2_map_path" value="$(var map_path)/$(var lanelet2_map_file)" />
+        <param from="$(find-pkg-share aichallenge_submit_launch)/config/map/lanelet2_map_loader.param.yaml" />
+        <extra_arg name="use_intra_process_comms" value="false" />
+      </composable_node>
+
+      <!-- map_tf_generator::VectorMapTFGeneratorNode -->
+      <composable_node pkg="map_tf_generator" plugin="VectorMapTFGeneratorNode" name="vector_map_tf_generator" namespace="">
+        <param name="map_frame" value="map" />
+        <param name="viewer_frame" value="viewer" />
+        <extra_arg name="use_intra_process_comms" value="false" />
+      </composable_node>
+
+    </node_container>
+
+  </group> <!-- map -->
+
+</launch>
