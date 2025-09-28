@@ -68,8 +68,8 @@
           "/vehicle/status/steering_status",
           "/vehicle/status/velocity_status"
         ],
-        service_servers: [".*"],
-        service_clients: [".*"],
+        service_servers: [],
+        service_clients: [],
         action_servers: [],
         action_clients: [],
       },
