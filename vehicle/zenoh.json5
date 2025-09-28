@@ -55,17 +55,9 @@
       allow: {
         publishers: [
           "/clock",
-          "/control/command/actuation_cmd",
           "/control/command/control_cmd",
-          "/localization/acceleration",
           "/localization/kinematic_state",
-          "/map/vector_map_marker",
           "/planning/scenario_planning/trajectory",
-          "/robot_description",
-          "/sensing/gnss/nav_sat_fix",
-          "/sensing/gnss/pose_with_covariance",
-          "/sensing/imu/imu_raw",
-          "/sensing/vehicle_velocity_converter/twist_with_covariance",
           "/tf",
           "/tf_static",
           "/vehicle/status/gear_status",
