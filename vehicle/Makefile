@@ -78,13 +78,6 @@ build-autoware:
 	docker compose up -d aic-build
 	docker compose logs -f aic-build
 
-
-# rvizの起動・ログ表示
-rviz2:
-	docker compose stop rviz2
-	docker compose up -d rviz2
-	docker compose logs -f rviz2
-
 # ダウンロードからビルド・実行まで全て行う
 all: download
 	docker compose up -d aic-build driver zenoh autoware rosbag

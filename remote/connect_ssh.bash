@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 1. 引数が指定されているかチェック
-if [ $# -ne 2 ]; then
+# 1. 引数が2つ以上指定されているかチェック
+if [ $# -lt 2 ]; then
     echo "エラー: 接続先とユーザー名を指定してください。"
-    echo "使用法: $0 [A2|A3|A6|A7] ユーザー名"
+    echo "使用法: $0 [A2|A3|A6|A7] ユーザー名 [実行するコマンド]"
     exit 1
 fi
 
@@ -32,9 +32,21 @@ A7)
     ;;
 esac
 
+# 最初の2つの引数（接続先とユーザー名）を引数リストから削除
+shift 2
+
 # 3. 選択されたポートとユーザーでautosshを実行
-echo "Connecting... Target Vehicle: $TARGET_ID, User: $USERNAME"
+# 3番目以降の引数（現在は "$@" に格納されている）があれば、それがリモートコマンドとして実行される
+if [ $# -gt 0 ]; then
+    # コマンドが指定されている場合
+    echo "Connecting to $TARGET_ID as $USERNAME to run command: '$*'"
+else
+    # コマンドが指定されていない場合（インタラクティブ接続）
+    echo "Connecting... Target Vehicle: $TARGET_ID, User: $USERNAME"
+fi
+
 autossh -AC -M 0 -p "$PORT" \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
-    "${USERNAME}@57.180.63.135"
+    "${USERNAME}@57.180.63.135" \
+    "$@" # 3番目以降の引数をすべてコマンドとして渡す
