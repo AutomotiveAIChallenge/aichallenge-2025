@@ -39,4 +39,3 @@ done
 
 echo "Restarting zenoh bridge for target '${TARGET}'"
 exec "${CONNECT_SCRIPT}" "${TARGET}"
-

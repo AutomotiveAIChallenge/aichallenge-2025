@@ -33,23 +33,23 @@ fi
 mode="start"
 if [ $# -gt 0 ]; then
     case "$1" in
-        down)
-            mode="down"
-            shift
-            ;;
-        restart)
-            mode="restart"
-            shift
-            ;;
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        *)
-            echo "Error: unknown argument '$1'." >&2
-            usage
-            exit 1
-            ;;
+    down)
+        mode="down"
+        shift
+        ;;
+    restart)
+        mode="restart"
+        shift
+        ;;
+    -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+        echo "Error: unknown argument '$1'." >&2
+        usage
+        exit 1
+        ;;
     esac
 fi
 
@@ -60,24 +60,24 @@ if [ $# -gt 0 ]; then
 fi
 
 case "${mode}" in
-    start)
-        echo "Running 'make rviz2' inside '${VEHICLE_DIR}'."
-        cd "${VEHICLE_DIR}"
-        make rviz2 "$@"
-        ;;
-    down)
-        echo "Stopping and removing 'rviz2' service using compose file '${COMPOSE_FILE}'."
-        docker compose -f "${COMPOSE_FILE}" rm -f -s rviz2
-        ;;
-    restart)
-        echo "Restarting 'rviz2' service."
-        docker compose -f "${COMPOSE_FILE}" rm -f -s rviz2
-        echo "Running 'make rviz2' inside '${VEHICLE_DIR}' after restart."
-        cd "${VEHICLE_DIR}"
-        make rviz2 "$@"
-        ;;
-    *)
-        echo "Error: unsupported mode '${mode}'." >&2
-        exit 1
-        ;;
+start)
+    echo "Running 'make rviz2' inside '${VEHICLE_DIR}'."
+    cd "${VEHICLE_DIR}"
+    make rviz2 "$@"
+    ;;
+down)
+    echo "Stopping and removing 'rviz2' service using compose file '${COMPOSE_FILE}'."
+    docker compose -f "${COMPOSE_FILE}" rm -f -s rviz2
+    ;;
+restart)
+    echo "Restarting 'rviz2' service."
+    docker compose -f "${COMPOSE_FILE}" rm -f -s rviz2
+    echo "Running 'make rviz2' inside '${VEHICLE_DIR}' after restart."
+    cd "${VEHICLE_DIR}"
+    make rviz2 "$@"
+    ;;
+*)
+    echo "Error: unsupported mode '${mode}'." >&2
+    exit 1
+    ;;
 esac
