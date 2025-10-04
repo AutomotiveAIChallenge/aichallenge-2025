@@ -73,11 +73,6 @@ download:
 	fi
 	@echo "Process finished."
 
-# autowareのbuildのみ
-build-autoware:
-	docker compose up -d aic-build
-	docker compose logs -f aic-build
-
 # ダウンロードからビルド・実行まで全て行う
 all: download
 	docker compose up -d aic-build driver zenoh autoware rosbag
