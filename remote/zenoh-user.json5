@@ -180,7 +180,7 @@
   /// that zenoh runtime will use.
   /// If not set, a random unsigned 128bit integer will be used.
   /// WARNING: this id must be unique in your zenoh network.
-  id: "aichallenge2025r",
+  id: "aichallenge2025r90abcdef12345678",
 
   ////
   //// mode: The bridge's mode (router, peer or client)
