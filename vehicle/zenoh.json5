@@ -68,8 +68,8 @@
           "/racing_kart/joy",
           "/initialpose"
         ],
-        service_servers: [".*"],
-        service_clients: [".*"],
+        service_servers: [],
+        service_clients: [],
         action_servers: [],
         action_clients: [],
       },
