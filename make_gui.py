@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Tkinter-based launcher for remote vehicle helper scripts."""
 from __future__ import annotations
 
 import queue
@@ -9,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
+import tkinter.font as tkfont
+
 import tkinter as tk
 from tkinter import messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
@@ -17,7 +18,197 @@ ROOT_DIR = Path(__file__).resolve().parent
 REMOTE_DIR = (ROOT_DIR / "remote").resolve()
 
 DEFAULT_VEHICLE_ID = "A2"
-DEFAULT_USERNAME = ""
+DEFAULT_USERNAME = ""  # Deprecated: SSH User input removed.
+
+
+# --- Devias Material Kit Pro: Chateau Green palette (approx) ---
+# These values are offline approximations of the "Chateau Green" theme.
+# Adjust here if you have exact tokens from the design kit.
+PALETTE = {
+    "bg": "#F4F6F8",          # app background
+    "surface": "#FFFFFF",      # cards / frames
+    "text": "#1C252E",        # primary text (slightly darker)
+    "text_muted": "#637381",   # secondary text
+    "border": "#DFE3E8",
+    # Chateau Green core
+    "primary": "#00A76F",        # Chateau Green (main)
+    "primary_hover": "#008E61",  # hover (darker)
+    "primary_active": "#007053", # active (even darker)
+    "primary_soft": "#E6F4EF",   # subtle surface tint
+    # Danger accents
+    "danger": "#FF5630",
+    "danger_hover": "#E04E2C",
+    "danger_active": "#C24427",
+}
+
+
+def apply_devias_green_theme(root: tk.Tk) -> ttk.Style:
+    """Apply a Devias-like green theme using ttk.Style.
+
+    This function sets the base theme to 'clam' for consistent styling and
+    customizes widgets' colors, fonts, and padding. Buttons receive primary
+    (green), outline, and danger variants.
+    """
+    style = ttk.Style(root)
+    # Ensure a predictable style base
+    try:
+        style.theme_use("clam")
+    except Exception:
+        pass
+
+    # Root background
+    root.configure(bg=PALETTE["bg"])
+
+    # Base fonts
+    base_font = tkfont.nametofont("TkDefaultFont")
+    base_font.configure(size=10)
+    try:
+        heading_font = tkfont.nametofont("TkHeadingFont")
+        heading_font.configure(size=11, weight="bold")
+    except Exception:
+        heading_font = tkfont.Font(family=base_font.cget("family"), size=11, weight="bold")
+    try:
+        fixed_font = tkfont.nametofont("TkFixedFont")
+        fixed_font.configure(size=10)
+    except Exception:
+        fixed_font = tkfont.Font(family="Monospace", size=10)
+
+    # Frames and labels
+    style.configure(
+        "TFrame",
+        background=PALETTE["bg"],
+    )
+    style.configure(
+        "Card.TFrame",
+        background=PALETTE["surface"],
+        bordercolor=PALETTE["border"],
+        relief="flat",
+    )
+    style.configure(
+        "TLabel",
+        background=PALETTE["bg"],
+        foreground=PALETTE["text"],
+        font=base_font,
+    )
+    style.configure(
+        "Muted.TLabel",
+        background=PALETTE["bg"],
+        foreground=PALETTE["text_muted"],
+        font=base_font,
+    )
+    style.configure(
+        "Header.TLabel",
+        background=PALETTE["bg"],
+        foreground=PALETTE["text"],
+        font=heading_font,
+    )
+    style.configure(
+        "TLabelframe",
+        background=PALETTE["surface"],
+        foreground=PALETTE["text"],
+        bordercolor=PALETTE["border"],
+        relief="groove",
+    )
+    style.configure(
+        "TLabelframe.Label",
+        background=PALETTE["surface"],
+        foreground=PALETTE["text"],
+        font=heading_font,
+    )
+
+    # Entry fields
+    style.configure(
+        "TEntry",
+        fieldbackground=PALETTE["surface"],
+        background=PALETTE["surface"],
+        foreground=PALETTE["text"],
+        bordercolor=PALETTE["border"],
+        lightcolor=PALETTE["primary"],
+        darkcolor=PALETTE["border"],
+        relief="flat",
+        padding=6,
+    )
+
+    # Buttons - Primary (solid green)
+    style.configure(
+        "DeviasPrimary.TButton",
+        background=PALETTE["primary"],
+        foreground="#FFFFFF",
+        bordercolor=PALETTE["primary"],
+        focusthickness=0,
+        padding=(10, 6),
+        relief="flat",
+    )
+    style.map(
+        "DeviasPrimary.TButton",
+        background=[
+            ("active", PALETTE["primary_hover"]),
+            ("pressed", PALETTE["primary_active"]),
+            ("disabled", PALETTE["border"]),
+        ],
+        foreground=[("disabled", "#FFFFFF")],
+        bordercolor=[
+            ("active", PALETTE["primary_hover"]),
+            ("pressed", PALETTE["primary_active"]),
+            ("disabled", PALETTE["border"]),
+        ],
+    )
+
+    # Buttons - Outline (green outline on white)
+    style.configure(
+        "DeviasOutline.TButton",
+        background=PALETTE["surface"],
+        foreground=PALETTE["primary"],
+        bordercolor=PALETTE["primary"],
+        focusthickness=0,
+        padding=(10, 6),
+        relief="solid",
+        borderwidth=1,
+    )
+    style.map(
+        "DeviasOutline.TButton",
+        background=[
+            ("active", PALETTE["primary_soft"]),
+            ("pressed", PALETTE["primary_soft"]),
+        ],
+        bordercolor=[
+            ("active", PALETTE["primary"]),
+            ("pressed", PALETTE["primary"]),
+        ],
+        foreground=[
+            ("disabled", PALETTE["text_muted"]),
+        ],
+    )
+
+    # Buttons - Danger (stop)
+    style.configure(
+        "DeviasDanger.TButton",
+        background=PALETTE["danger"],
+        foreground="#FFFFFF",
+        bordercolor=PALETTE["danger"],
+        focusthickness=0,
+        padding=(10, 6),
+        relief="flat",
+    )
+    style.map(
+        "DeviasDanger.TButton",
+        background=[
+            ("active", PALETTE["danger_hover"]),
+            ("pressed", PALETTE["danger_active"]),
+            ("disabled", PALETTE["border"]),
+        ],
+        foreground=[("disabled", "#FFFFFF")],
+        bordercolor=[
+            ("active", PALETTE["danger_hover"]),
+            ("pressed", PALETTE["danger_active"]),
+            ("disabled", PALETTE["border"]),
+        ],
+    )
+
+    # Separator
+    style.configure("TSeparator", background=PALETTE["border"])
+
+    return style
 
 @dataclass
 class CommandSpec:
@@ -127,6 +318,9 @@ class RemoteGui:
         self.root = root
         self.root.title("Remote Vehicle Helper")
 
+        # Apply Devias-inspired theme before building UI
+        self.style = apply_devias_green_theme(self.root)
+
         if not REMOTE_DIR.exists():
             messagebox.showerror(
                 "Configuration error",
@@ -135,7 +329,7 @@ class RemoteGui:
             raise SystemExit(1)
 
         self.vehicle_id_var = tk.StringVar(value=DEFAULT_VEHICLE_ID)
-        self.username_var = tk.StringVar(value=DEFAULT_USERNAME)
+        # SSH user was removed from UI; keep empty string for compatibility.
 
         self.processes: Dict[str, subprocess.Popen[str]] = {}
         self.process_threads: Dict[str, threading.Thread] = {}
@@ -145,65 +339,86 @@ class RemoteGui:
         self.root.after(100, self._poll_log_queue)
 
     def _build_ui(self) -> None:
-        top_frame = ttk.Frame(self.root)
-        top_frame.pack(fill=tk.X, padx=12, pady=8)
+        # Top banner (subtle spacing)
+        container = ttk.Frame(self.root)
+        container.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(top_frame, text="Vehicle ID:").pack(side=tk.LEFT)
-        vehicle_entry = ttk.Entry(top_frame, textvariable=self.vehicle_id_var, width=12)
-        vehicle_entry.pack(side=tk.LEFT, padx=(4, 12))
+        top_frame = ttk.Frame(container, style="TFrame")
+        top_frame.pack(fill=tk.X, padx=16, pady=(16, 8))
 
-        ttk.Label(top_frame, text="SSH User:").pack(side=tk.LEFT)
-        username_entry = ttk.Entry(top_frame, textvariable=self.username_var, width=14)
-        username_entry.pack(side=tk.LEFT, padx=(4, 12))
+        ttk.Label(top_frame, text="Vehicle ID:", style="TLabel").pack(side=tk.LEFT)
+        vehicle_entry = ttk.Entry(top_frame, textvariable=self.vehicle_id_var, width=14)
+        vehicle_entry.pack(side=tk.LEFT, padx=(6, 16))
 
-        preview_frame = ttk.Frame(self.root)
-        preview_frame.pack(fill=tk.X, padx=12, pady=(0, 8))
+        # SSH User input removed per request.
 
-        self.directory_label = ttk.Label(preview_frame, text="Directory: -")
+        preview_frame = ttk.Frame(container, style="Card.TFrame")
+        preview_frame.pack(fill=tk.X, padx=16, pady=(0, 8))
+
+        self.directory_label = ttk.Label(preview_frame, text="Directory: -", style="TLabel")
         self.directory_label.pack(anchor=tk.W)
-        self.command_label = ttk.Label(preview_frame, text="Command: -")
+        self.command_label = ttk.Label(preview_frame, text="Command: -", style="TLabel")
         self.command_label.pack(anchor=tk.W)
-        self.note_label = ttk.Label(preview_frame, text="Note: -", foreground="#555555")
+        self.note_label = ttk.Label(preview_frame, text="Note: -", style="Muted.TLabel")
         self.note_label.pack(anchor=tk.W)
 
-        button_container = ttk.Frame(self.root)
-        button_container.pack(fill=tk.X, padx=12, pady=4)
+        button_container = ttk.Frame(container)
+        button_container.pack(fill=tk.X, padx=16, pady=8)
 
         for label, buttons in ROW_LAYOUT:
             row_frame = ttk.Frame(button_container)
-            row_frame.pack(fill=tk.X, pady=4)
-            ttk.Label(row_frame, text=label, width=8).pack(side=tk.LEFT, padx=(0, 8))
+            row_frame.pack(fill=tk.X, pady=6)
+            ttk.Label(row_frame, text=label, width=8, style="Header.TLabel").pack(side=tk.LEFT, padx=(0, 12))
             for btn_label in buttons:
                 spec = SPEC_MAP[btn_label]
+                # Choose button style based on intent
+                btn_style = "DeviasPrimary.TButton"
+                if spec.kind == "stop" or spec.label.lower().startswith("stop"):
+                    btn_style = "DeviasDanger.TButton"
+                elif spec.label.lower().startswith("restart"):
+                    btn_style = "DeviasOutline.TButton"
+
                 ttk.Button(
                     row_frame,
                     text=spec.label,
                     command=lambda s=spec: self._handle_command(s),
-                    width=16,
-                ).pack(side=tk.LEFT, padx=4)
+                    width=18,
+                    style=btn_style,
+                ).pack(side=tk.LEFT, padx=6)
 
         stop_all_spec = SPEC_MAP.get(STOP_ALL_LABEL)
         if stop_all_spec:
             stop_all_frame = ttk.Frame(button_container)
-            stop_all_frame.pack(fill=tk.X, pady=4)
-            ttk.Label(stop_all_frame, text="All", width=8).pack(side=tk.LEFT, padx=(0, 8))
+            stop_all_frame.pack(fill=tk.X, pady=6)
+            ttk.Label(stop_all_frame, text="All", width=8, style="Header.TLabel").pack(side=tk.LEFT, padx=(0, 12))
             ttk.Button(
                 stop_all_frame,
                 text=stop_all_spec.label,
                 command=lambda s=stop_all_spec: self._handle_command(s),
-                width=16,
+                width=18,
+                style="DeviasDanger.TButton",
             ).pack(side=tk.LEFT, padx=4)
 
-        logs_frame = ttk.Frame(self.root)
-        logs_frame.pack(fill=tk.BOTH, expand=True, padx=12, pady=(4, 12))
+        logs_frame = ttk.Frame(container)
+        logs_frame.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 16))
 
         self.log_widgets: Dict[str, ScrolledText] = {}
         for idx, (key, title) in enumerate(LOG_AREAS.items()):
-            frame = ttk.LabelFrame(logs_frame, text=title)
+            frame = ttk.LabelFrame(logs_frame, text=title, style="TLabelframe")
             frame.grid(row=0, column=idx, padx=4, pady=4, sticky=tk.NSEW)
             logs_frame.columnconfigure(idx, weight=1)
 
-            text_widget = ScrolledText(frame, height=18, width=40, state=tk.DISABLED)
+            text_widget = ScrolledText(
+                frame,
+                height=18,
+                width=40,
+                state=tk.DISABLED,
+                background=PALETTE["surface"],
+                foreground=PALETTE["text"],
+                insertbackground=PALETTE["text"],
+                borderwidth=1,
+                relief="solid",
+            )
             text_widget.pack(fill=tk.BOTH, expand=True)
             self.log_widgets[key] = text_widget
 
@@ -223,15 +438,13 @@ class RemoteGui:
 
     def _handle_command(self, spec: CommandSpec) -> None:
         vehicle_id = self.vehicle_id_var.get().strip()
-        username = self.username_var.get().strip()
+        username = ""
 
         if spec.requires_vehicle and not vehicle_id:
             messagebox.showwarning("入力不足", "Vehicle ID を指定してください。")
             return
 
-        if spec.requires_username and not username:
-            messagebox.showwarning("入力不足", "SSH User を指定してください。")
-            return
+        # SSH user requirement removed.
 
         if spec.kind == "stop_all":
             self._update_preview(REMOTE_DIR, "[Stop All]", spec.note or "")
