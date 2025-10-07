@@ -165,6 +165,16 @@ def apply_devias_green_theme(root: tk.Tk) -> ttk.Style:
         relief="solid",
         borderwidth=1,
     )
+    style.configure(
+        "DeviasOutlineTall.TButton",
+        background=PALETTE["surface"],
+        foreground=PALETTE["primary"],
+        bordercolor=PALETTE["primary"],
+        focusthickness=0,
+        padding=(10, 6),  # More vertical padding
+        relief="solid",
+        borderwidth=1,
+    )
     style.map(
         "DeviasOutline.TButton",
         background=[
@@ -258,6 +268,14 @@ COMMANDS: List[CommandSpec] = [
         note="既存プロセス停止後に zenoh bridge を再接続します。",
     ),
     CommandSpec(
+        label="Restart Zenoh and RViz",
+        command="./restart.bash {vehicle_id}",
+        log_key="zenoh",
+        requires_vehicle=True,
+        stop_before=True,
+        note="RViz と Zenoh bridge を再起動します。",
+    ),
+    CommandSpec(
         label="Start RViz",
         command="./rviz.bash",
         log_key="rviz",
@@ -300,7 +318,7 @@ COMMANDS: List[CommandSpec] = [
 SPEC_MAP: Dict[str, CommandSpec] = {spec.label: spec for spec in COMMANDS}
 
 ROW_LAYOUT = [
-    ("Zenoh", ["Start Zenoh", "Stop Zenoh", "Restart Zenoh"]),
+    ("Zenoh", ["Start Zenoh", "Stop Zenoh", "Restart Zenoh", "Restart Zenoh and RViz"]),
     ("RViz", ["Start RViz", "Stop RViz", "Restart RViz"]),
     ("Joy", ["Start Joy", "Stop Joy", "Restart Joy"]),
 ]
