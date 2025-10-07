@@ -54,7 +54,6 @@
       ////               or is not specified at all, it means that ALL such interface are allowed.
       allow: {
         publishers: [
-          "/clock",
           "/control/command/control_cmd",
           "/localization/kinematic_state",
           "/planning/scenario_planning/trajectory",
@@ -102,7 +101,7 @@
       ////                   The express policy makes Zenoh to to send the message immediatly, not waiting for possible further messages
       ////                   to create a bigger batch of messages. This usually has a positive impact on latency for the topic
       ////                   but a negative impact on the general throughput, as more overhead is used for those topics.
-      pub_priorities: ["/racing_kart/joy=1:express"],
+      pub_priorities: [],
 
       ////
       //// reliable_routes_blocking: When true, the publications from a RELIABLE DDS Writer will be
@@ -178,7 +177,7 @@
   /// that zenoh runtime will use.
   /// If not set, a random unsigned 128bit integer will be used.
   /// WARNING: this id must be unique in your zenoh network.
-  // id: "1234567890abcdef",
+  id: "61696368616c6c656e676532303235bb",
 
   ////
   //// mode: The bridge's mode (router, peer or client)
