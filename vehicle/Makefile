@@ -73,12 +73,6 @@ download:
 	fi
 	@echo "Process finished."
 
-# autowareのbuildのみ
-build-autoware:
-	docker compose up -d aic-build
-	docker compose logs -f aic-build
-
-
 # rvizの起動・ログ表示
 rviz2:
 	docker compose stop rviz2
