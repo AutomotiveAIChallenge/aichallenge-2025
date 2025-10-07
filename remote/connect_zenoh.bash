@@ -34,14 +34,21 @@ A7)
         -e tls/57.180.63.135:7451 \
         -c zenoh-user.json5
     ;;
-local)
+test-remote)
     ENDPOINT="${ZENOH_LOCAL_ENDPOINT:-tcp/127.0.0.1:7448}"
     echo "Connecting Zenoh. Target Vehicle: 'local' - Endpoint ${ENDPOINT}"
     RUST_BACKTRACE=1 zenoh-bridge-ros2dds client \
         -e "${ENDPOINT}" \
         -c zenoh-user.json5
     ;;
-local-server)
+test-vehicle)
+    ENDPOINT="${ZENOH_LOCAL_ENDPOINT:-tcp/127.0.0.1:7448}"
+    echo "Connecting Zenoh. Target Vehicle: 'local' - Endpoint ${ENDPOINT}"
+    RUST_BACKTRACE=1 zenoh-bridge-ros2dds client \
+        -e "${ENDPOINT}" \
+        -c ../vehicle/zenoh.json5
+    ;;
+test-server)
     zenohd --listen tcp/127.0.0.1:7448
     ;;
 *)
