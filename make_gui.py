@@ -171,12 +171,26 @@ def apply_devias_green_theme(root: tk.Tk) -> ttk.Style:
         foreground=PALETTE["primary"],
         bordercolor=PALETTE["primary"],
         focusthickness=0,
-        padding=(10, 6),  # More vertical padding
+        padding=(10, 48),
         relief="solid",
         borderwidth=1,
     )
     style.map(
         "DeviasOutline.TButton",
+        background=[
+            ("active", PALETTE["primary_soft"]),
+            ("pressed", PALETTE["primary_soft"]),
+        ],
+        bordercolor=[
+            ("active", PALETTE["primary"]),
+            ("pressed", PALETTE["primary"]),
+        ],
+        foreground=[
+            ("disabled", PALETTE["text_muted"]),
+        ],
+    )
+    style.map(
+        "DeviasOutlineTall.TButton",
         background=[
             ("active", PALETTE["primary_soft"]),
             ("pressed", PALETTE["primary_soft"]),
@@ -317,10 +331,11 @@ COMMANDS: List[CommandSpec] = [
 
 SPEC_MAP: Dict[str, CommandSpec] = {spec.label: spec for spec in COMMANDS}
 
-ROW_LAYOUT = [
-    ("Zenoh", ["Start Zenoh", "Stop Zenoh", "Restart Zenoh", "Restart Zenoh and RViz"]),
+COLUMN_LAYOUT = [
+    ("Zenoh", ["Start Zenoh", "Stop Zenoh", "Restart Zenoh"]),
     ("RViz", ["Start RViz", "Stop RViz", "Restart RViz"]),
     ("Joy", ["Start Joy", "Stop Joy", "Restart Joy"]),
+    ("Zenoh and RViz", ["Restart Zenoh and RViz"]),
 ]
 
 STOP_ALL_LABEL = "Stop All"
@@ -383,26 +398,43 @@ class RemoteGui:
         button_container = ttk.Frame(container)
         button_container.pack(fill=tk.X, padx=16, pady=8)
 
-        for label, buttons in ROW_LAYOUT:
-            row_frame = ttk.Frame(button_container)
-            row_frame.pack(fill=tk.X, pady=6)
-            ttk.Label(row_frame, text=label, width=8, style="Header.TLabel").pack(side=tk.LEFT, padx=(0, 12))
-            for btn_label in buttons:
-                spec = SPEC_MAP[btn_label]
-                # Choose button style based on intent
-                btn_style = "DeviasPrimary.TButton"
-                if spec.kind == "stop" or spec.label.lower().startswith("stop"):
-                    btn_style = "DeviasDanger.TButton"
-                elif spec.label.lower().startswith("restart"):
-                    btn_style = "DeviasOutline.TButton"
+        for col_idx, (label, buttons) in enumerate(COLUMN_LAYOUT):
+            col_frame = ttk.Frame(button_container)
+            col_frame.grid(row=0, column=col_idx, padx=8, pady=6, sticky=tk.N)
 
-                ttk.Button(
-                    row_frame,
-                    text=spec.label,
-                    command=lambda s=spec: self._handle_command(s),
-                    width=18,
-                    style=btn_style,
-                ).pack(side=tk.LEFT, padx=6)
+            ttk.Label(col_frame, text=label, style="Header.TLabel").pack(pady=(0, 8))
+
+            if label == "Zenoh and RViz":
+                for btn_label in buttons:
+                    spec = SPEC_MAP[btn_label]
+                    btn_style = "DeviasOutlineTall.TButton"
+                    
+                    ttk.Button(
+                        col_frame,
+                        text=spec.label,
+                        command=lambda s=spec: self._handle_command(s),
+                        width=20,
+                        style=btn_style,
+                    ).pack(pady=4, fill=tk.X)
+            else:
+                for btn_label in buttons:
+                    spec = SPEC_MAP[btn_label]
+                    btn_style = "DeviasPrimary.TButton"
+                    if spec.kind == "stop" or spec.label.lower().startswith("stop"):
+                        btn_style = "DeviasDanger.TButton"
+                    elif spec.label.lower().startswith("restart"):
+                        btn_style = "DeviasOutline.TButton"
+
+                    ttk.Button(
+                        col_frame,
+                        text=spec.label,
+                        command=lambda s=spec: self._handle_command(s),
+                        width=18,
+                        style=btn_style,
+                    ).pack(pady=4, fill=tk.X)
+        
+        for i in range(len(COLUMN_LAYOUT)):
+            button_container.columnconfigure(i, weight=1)
 
         stop_all_spec = SPEC_MAP.get(STOP_ALL_LABEL)
         if stop_all_spec:
