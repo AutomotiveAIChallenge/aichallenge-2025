@@ -251,7 +251,7 @@ COMMANDS: List[CommandSpec] = [
     ),
     CommandSpec(
         label="Restart Zenoh",
-        command="./restart.bash {vehicle_id}",
+        command="./connect_zenoh.bash {vehicle_id}",
         log_key="zenoh",
         requires_vehicle=True,
         stop_before=True,
