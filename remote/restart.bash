@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ./rviz.bash down
 
@@ -6,9 +7,6 @@
 
 echo "5秒待機しzenohに接続します..."
 sleep 5
-
-#!/bin/bash
-set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 CONNECT_SCRIPT="${SCRIPT_DIR}/connect_zenoh.bash"
