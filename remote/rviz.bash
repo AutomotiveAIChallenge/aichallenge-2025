@@ -9,7 +9,7 @@ COMPOSE_FILE="${VEHICLE_DIR}/docker-compose.yml"
 usage() {
     cat <<'USAGE'
 Usage:
-  rviz.bash            # start RViz stack via make rviz
+  rviz.bash            # start RViz stack via make rviz2
   rviz.bash down       # stop and remove rviz2 service
   rviz.bash restart    # restart rviz2 service
 USAGE
