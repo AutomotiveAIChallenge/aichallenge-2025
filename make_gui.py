@@ -338,8 +338,6 @@ COLUMN_LAYOUT = [
     ("Zenoh and RViz", ["Restart Zenoh and RViz"]),
 ]
 
-STOP_ALL_LABEL = "Stop All"
-
 LOG_AREAS = {
     "zenoh": "Zenoh Log",
     "rviz": "RViz Log",
@@ -436,19 +434,6 @@ class RemoteGui:
         for i in range(len(COLUMN_LAYOUT)):
             button_container.columnconfigure(i, weight=1)
 
-        stop_all_spec = SPEC_MAP.get(STOP_ALL_LABEL)
-        if stop_all_spec:
-            stop_all_frame = ttk.Frame(button_container)
-            stop_all_frame.pack(fill=tk.X, pady=6)
-            ttk.Label(stop_all_frame, text="All", width=8, style="Header.TLabel").pack(side=tk.LEFT, padx=(0, 12))
-            ttk.Button(
-                stop_all_frame,
-                text=stop_all_spec.label,
-                command=lambda s=stop_all_spec: self._handle_command(s),
-                width=18,
-                style="DeviasDanger.TButton",
-            ).pack(side=tk.LEFT, padx=4)
-
         logs_frame = ttk.Frame(container)
         logs_frame.pack(fill=tk.BOTH, expand=True, padx=16, pady=(4, 16))
 
@@ -481,11 +466,6 @@ class RemoteGui:
         self._append_log(log_key, '[stop requested]\n')
         self._stop_process(log_key)
 
-    def _stop_all_processes(self) -> None:
-        for log_key in list(self.processes.keys()):
-            self._append_log(log_key, '[stop requested]\n')
-            self._stop_process(log_key)
-
     def _handle_command(self, spec: CommandSpec) -> None:
         vehicle_id = self.vehicle_id_var.get().strip()
         username = ""
@@ -495,11 +475,6 @@ class RemoteGui:
             return
 
         # SSH user requirement removed.
-
-        if spec.kind == "stop_all":
-            self._update_preview(REMOTE_DIR, "[Stop All]", spec.note or "")
-            self._stop_all_processes()
-            return
 
         if spec.kind == "stop":
             if not spec.log_key:
