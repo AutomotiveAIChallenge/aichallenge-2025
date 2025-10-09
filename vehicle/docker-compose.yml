@@ -84,10 +84,3 @@ services:
     container_name: "aic-2025-rviz2"
     stop_grace_period: 0.1s
     command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_rviz.bash remote"]
-
-  # Aic-build service
-  aic-build:
-    <<: *autoware-base
-    container_name: "aic-2025-build"
-    stop_grace_period: 0.1s
-    command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']

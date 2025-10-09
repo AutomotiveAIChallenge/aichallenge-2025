@@ -15,21 +15,15 @@ zenoh:
 	docker compose up -d zenoh
 	docker compose logs -f zenoh
 
-# racing_kart_interfaceのbashを起動
-driver-bash:
-	docker compose run driver bash
-
 # aicコンテナにてros2 bag record -a
-rosbag:
-	docker compose up -d rosbag 
-	docker compose logs -f rosbag
+#rosbag:
+#	docker compose up -d rosbag 
+#	docker compose logs -f rosbag
 
-rosbag-all:
-	docker compose up -d rosbag
 run-full-system:
 	docker compose up -d driver
 	docker compose up -d autoware
-	$(MAKE) rosbag-all
+# 	$(MAKE) rosbag
 	sleep 15
 	docker compose up -d zenoh
 	docker compose logs -f autoware driver zenoh 2>&1 | tee log/full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
@@ -73,19 +67,8 @@ download:
 	fi
 	@echo "Process finished."
 
-# autowareのbuildのみ
-build-autoware:
-	docker compose up -d aic-build
-	docker compose logs -f aic-build
-
-
 # rvizの起動・ログ表示
 rviz2:
 	docker compose stop rviz2
 	docker compose up -d rviz2
 	docker compose logs -f rviz2
-
-# ダウンロードからビルド・実行まで全て行う
-all: download
-	docker compose up -d aic-build driver zenoh autoware rosbag
-	docker compose logs -f aic-build driver zenoh autoware rosbag

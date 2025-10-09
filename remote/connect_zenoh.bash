@@ -3,7 +3,7 @@
 # スクリプトに引数が1つだけ渡されているかチェック
 if [ "$#" -ne 1 ]; then
     echo "エラー: Vechicle IDを指定してください。" >&2
-    echo "使用法: $0 {A2|A3|A6|A7}" >&2
+    echo "使用法: $0 {A2|A3|A6|A7|test-*}" >&2
     exit 1
 fi
 
@@ -53,7 +53,7 @@ test-server)
     ;;
 *)
     echo "エラー: 無効な名前空間です: '$NAMESPACE'" >&2
-    echo "A2, A3, A6, A7 のいずれかを指定してください。" >&2
+    echo "A2, A3, A6, A7, test-* のいずれかを指定してください。" >&2
     exit 1
     ;;
 esac
