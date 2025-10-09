@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" 
+            schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  
+  <name>imu_advanced_filter</name>
+  <version>1.0.0</version>
+  <description>
+    AIチャレンジ2025用 IMU高度フィルタシステム
+    
+    解決する課題:
+    1. ドリフト現象 - IMUの積分計算による誤差累積を補正
+    2. 振動ノイズ - 車両走行時の振動によるノイズ混入を除去
+  </description>
+  
+  <maintainer email="developer@aichallenge.org">AI Challenge Developer</maintainer>
+  <license>Apache-2.0</license>
+  
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+  
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  
+  <depend>eigen3_cmake_module</depend>
+  <build_depend>eigen</build_depend>
+  
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+  
+</package>
