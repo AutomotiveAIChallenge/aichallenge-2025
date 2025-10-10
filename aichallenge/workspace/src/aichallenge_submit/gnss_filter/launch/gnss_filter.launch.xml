@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- ==================== 入力トピック設定 ==================== -->
+  <!-- 生のGNSSデータの入力トピック -->
+  <arg name="input_gnss_topic" default="/fix"/>
+  
+  <!-- ==================== 出力トピック設定 ==================== -->
+  <!-- フィルタリング済みGNSSデータの出力トピック -->
+  <arg name="output_gnss_topic" default="/gnss/filtered_fix"/>
+  
+  <!-- ==================== パラメータファイル設定 ==================== -->
+  <!-- フィルタリングパラメータを定義したYAMLファイル -->
+  <arg name="param_file" default="$(find-pkg-share gnss_filter)/config/gnss_filter.param.yaml"/>
+
+  <!-- ==================== ノードの起動 ==================== -->
+  <node pkg="gnss_filter" exec="gnss_filter" name="gnss_filter" output="screen">
+    <!-- トピックのリマップ -->
+    <remap from="gnss/fix" to="$(var input_gnss_topic)"/>
+    <remap from="gnss/filtered_fix" to="$(var output_gnss_topic)"/>
+    
+    <!-- パラメータファイルの読み込み -->
+    <param from="$(var param_file)"/>
+  </node>
+</launch>
