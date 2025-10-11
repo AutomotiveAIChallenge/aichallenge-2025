@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    # ノイズ低減強化
+    buffer_size: 10
+    max_distance_threshold: 50.0
+    max_covariance_threshold: 50.0
+    min_satellites: 5
