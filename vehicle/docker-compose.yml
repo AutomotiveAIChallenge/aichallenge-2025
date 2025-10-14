@@ -1,5 +1,5 @@
 x-autoware-base: &autoware-base
-  image: "aichallenge-2025-dev-${USER}"
+  image: "aichallenge-2025-dev"
   privileged: true
   pull_policy: never
   network_mode: host
