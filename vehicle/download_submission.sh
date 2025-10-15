@@ -108,11 +108,11 @@ get_password() {
 
     if [ -t 0 ]; then
         # Terminal input available
-        read -s -p "$prompt" password
+        read -r -s -p "$prompt" password
         echo >&2 # Add newline after hidden input (redirect to stderr so it doesn't interfere)
     else
         # No terminal input (e.g., piped input)
-        read password
+        read -r password
     fi
 
     echo "$password"
@@ -178,7 +178,7 @@ main() {
     # Get credentials if not provided via command line
     if [ -z "$USERNAME" ]; then
         # Prompt user for input
-        read -p "Enter username/email: " USERNAME
+        read -r -p "Enter username/email: " USERNAME
     fi
 
     if [ -z "$PASSWORD" ]; then
@@ -246,7 +246,7 @@ main() {
 
     tar -xzf "$TAR_FILE" -C "$OUTPUT_DIR"
 
-    if [ $? -eq 0 ]; then
+    if tar -xzf "$TAR_FILE" -C "$OUTPUT_DIR"; then
         print_success "Extraction completed successfully!"
 
         # Clean up the original tar.gz file
