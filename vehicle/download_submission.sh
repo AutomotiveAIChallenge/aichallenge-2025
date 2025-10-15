@@ -86,7 +86,7 @@ check_python_script() {
 
 # Function to check if Python is available
 check_python() {
-    if ! command -v python3 &> /dev/null; then
+    if ! command -v python3 &>/dev/null; then
         print_error "Python 3 is not installed or not in PATH"
         exit 1
     fi
@@ -109,7 +109,7 @@ get_password() {
     if [ -t 0 ]; then
         # Terminal input available
         read -s -p "$prompt" password
-        echo >&2  # Add newline after hidden input (redirect to stderr so it doesn't interfere)
+        echo >&2 # Add newline after hidden input (redirect to stderr so it doesn't interfere)
     else
         # No terminal input (e.g., piped input)
         read password
@@ -126,43 +126,43 @@ VERBOSE=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -u|--username)
-            USERNAME="$2"
-            shift 2
-            ;;
-        -p|--password)
-            PASSWORD="$2"
-            shift 2
-            ;;
-        -o|--output)
-            OUTPUT_DIR="$2"
-            shift 2
-            ;;
-        -s|--submission-id)
-            SUBMISSION_ID="$2"
-            shift 2
-            ;;
-        -i|--user-id)
-            USER_ID="$2"
-            shift 2
-            ;;
-        -a|--api-url)
-            API_BASE_URL="$2"
-            shift 2
-            ;;
-        -v|--verbose)
-            VERBOSE="--verbose"
-            shift
-            ;;
-        -h|--help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            show_usage
-            exit 1
-            ;;
+    -u | --username)
+        USERNAME="$2"
+        shift 2
+        ;;
+    -p | --password)
+        PASSWORD="$2"
+        shift 2
+        ;;
+    -o | --output)
+        OUTPUT_DIR="$2"
+        shift 2
+        ;;
+    -s | --submission-id)
+        SUBMISSION_ID="$2"
+        shift 2
+        ;;
+    -i | --user-id)
+        USER_ID="$2"
+        shift 2
+        ;;
+    -a | --api-url)
+        API_BASE_URL="$2"
+        shift 2
+        ;;
+    -v | --verbose)
+        VERBOSE="--verbose"
+        shift
+        ;;
+    -h | --help)
+        show_usage
+        exit 0
+        ;;
+    *)
+        print_error "Unknown option: $1"
+        show_usage
+        exit 1
+        ;;
     esac
 done
 
@@ -229,7 +229,7 @@ main() {
     # Extract downloaded tar.gz file from download folder to the output directory
     DOWNLOAD_DIR="$SCRIPT_DIR/download"
     TAR_FILE=$(find "$DOWNLOAD_DIR" -name "*.tar.gz" -type f | head -1)
-    
+
     if [ -z "$TAR_FILE" ]; then
         print_error "No tar.gz file found in download directory: $DOWNLOAD_DIR"
         exit 1
@@ -239,16 +239,16 @@ main() {
     print_info "Removing existing aichallenge_submit directory..."
     rm -rf "$OUTPUT_DIR/aichallenge_submit"
     print_success "Removal completed successfully!"
-    
+
     print_info "Extracting downloaded tar.gz file to the output directory..."
     print_info "Source: $TAR_FILE"
     print_info "Destination: $OUTPUT_DIR"
-    
+
     tar -xzf "$TAR_FILE" -C "$OUTPUT_DIR"
-    
+
     if [ $? -eq 0 ]; then
         print_success "Extraction completed successfully!"
-        
+
         # Clean up the original tar.gz file
         print_info "Cleaning up original tar.gz file..."
         rm -f "$TAR_FILE"
