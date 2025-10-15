@@ -1,4 +1,7 @@
 SHELL := /bin/bash
+
+.PHONY: download
+
 # 既にコンテナが立ち上がっている場合はログの表示を行います。
 # autowareのみ起動・ログ表示
 autoware:
@@ -37,41 +40,22 @@ run-full-system:
 # Download submission data by asking for credentials interactively
 # Usage:
 #   make download [SUBMISSION_ID=<id>]
+# Usage (Only Admins):
+#   make download [USER_ID=<id>] [SUBMISSION_ID=<id>]
 download:
-	@read -p "Enter Username: " USERNAME; \
-	read -sp "Enter Password: " PASSWORD; \
-	echo ""; \
-	if [ -z "$$USERNAME" ] || [ -z "$$PASSWORD" ]; then \
-		echo "\nError: USERNAME and PASSWORD must be provided."; \
-		exit 1; \
-	fi; \
-	echo "Downloading submission data..."; \
-	CMD="python3 ../download_latest_submission.py --username='$$USERNAME' --password='$$PASSWORD'"; \
-	if [ -n "$(SUBMISSION_ID)" ]; then \
-		CMD="$$CMD --submission-id='$(SUBMISSION_ID)'"; \
-	fi; \
-	OUTPUT=$$(eval $$CMD 2>&1); \
-	echo "$$OUTPUT"; \
-	GREPPED_LINE=$$(echo "$$OUTPUT" | grep "File saved to:"); \
-	TARBALL_PATH=$$(echo "$$GREPPED_LINE" | awk '{print $$NF}' | tr -d '\r'); \
-	if [ -n "$$TARBALL_PATH" ] && [ -f "$$TARBALL_PATH" ]; then \
-		echo "----------------------------------------"; \
-		echo "✅ Downloaded file found: $$TARBALL_PATH"; \
-		SUBMIT_DIR_PATH="/home/$$USER/aichallenge-2025/aichallenge/workspace/src/aichallenge_submit"; \
-		EXTRACT_DIR_PATH="/home/$$USER/aichallenge-2025/aichallenge/workspace/src"; \
-		echo "🧹 Deleting existing directory: $$SUBMIT_DIR_PATH"; \
-		rm -rf "$$SUBMIT_DIR_PATH"; \
-		echo "📦 Extracting archive to: $$SUBMIT_DIR_PATH/"; \
-		tar -xzf "$$TARBALL_PATH" -C "$$EXTRACT_DIR_PATH"; \
-		rm  "$$TARBALL_PATH"; \
-		echo "Extraction completed successfully."; \
-		echo "----------------------------------------"; \
+	@if [ -n "$(USER_ID)" ]; then \
+		if [ -n "$(SUBMISSION_ID)" ]; then \
+			./download_submission.sh --output ../aichallenge/workspace/src/ --user-id $(USER_ID) --submission-id $(SUBMISSION_ID); \
+		else \
+			./download_submission.sh --output ../aichallenge/workspace/src/ --user-id $(USER_ID); \
+		fi; \
 	else \
-		echo "----------------------------------------"; \
-		echo "⚠️ Extraction failed: Could not find a valid file to extract."; \
-		echo "----------------------------------------"; \
+		if [ -n "$(SUBMISSION_ID)" ]; then \
+			./download_submission.sh --output ../aichallenge/workspace/src/ --submission-id $(SUBMISSION_ID); \
+		else \
+			./download_submission.sh --output ../aichallenge/workspace/src/; \
+		fi; \
 	fi
-	@echo "Process finished."
 
 # autowareのbuildのみ
 build-autoware:
