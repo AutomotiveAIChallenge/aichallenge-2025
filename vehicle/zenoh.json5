@@ -101,7 +101,16 @@
       ////                   The express policy makes Zenoh to to send the message immediatly, not waiting for possible further messages
       ////                   to create a bigger batch of messages. This usually has a positive impact on latency for the topic
       ////                   but a negative impact on the general throughput, as more overhead is used for those topics.
-      pub_priorities: [],
+      pub_priorities: [
+          "/control/command/control_cmd=7",
+          "/localization/kinematic_state=5",
+          "/planning/scenario_planning/trajectory=7",
+          "/tf=7",
+          "/tf_static=7",
+          "/vehicle/status/gear_status=7",
+          "/vehicle/status/steering_status=7",
+          "/vehicle/status/velocity_status=7",
+      ],
 
       ////
       //// reliable_routes_blocking: When true, the publications from a RELIABLE DDS Writer will be
