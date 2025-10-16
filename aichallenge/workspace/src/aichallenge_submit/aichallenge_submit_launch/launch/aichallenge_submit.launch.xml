@@ -19,8 +19,13 @@
     <arg name="simulation" value="$(var simulation)"/>
     <arg name="launch_vehicle_interface" value="$(var launch_vehicle_interface)"/>
   </include>
+  
   <!-- TODO remove this -->
   <node pkg="goal_pose_setter" exec="goal_pose_setter_node" name="goal_pose_setter" output="screen">
     <param from="$(find-pkg-share goal_pose_setter)/config/default_goal_pose.param.yaml" />
   </node>
+  
+  <!-- ゴールライン通過判定ノード（追加） -->
+  <node pkg="goal_checker" exec="goal_line_checker_node" name="goal_line_checker_node" output="screen"/>
+  
 </launch>
