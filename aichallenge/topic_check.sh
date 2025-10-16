@@ -5,7 +5,7 @@
 #   - コンテナ内で実行
 #   - `source aichallenge/workspace/install/setup.bash` 済み
 # 使い方:
-#   bash vehicle/topic_check.sh [--timeout 15] [--output output/latest/topic_check.txt] [--list]
+#   bash topic_check.sh [--timeout 15] [--output output/latest/topic_check.txt] [--list]
 
 set -euo pipefail
 
