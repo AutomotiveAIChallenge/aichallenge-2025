@@ -109,7 +109,7 @@ log_init() {
 }
 
 collect_topics_once() {
-    ros2 topic list 2>/dev/null || true
+    ros2 topic list 2>/dev/null | head -n 1000 || true
 }
 
 all_required_present_within_timeout() {
@@ -159,8 +159,10 @@ measure_hz() {
 }
 check_actuation_cmd() {
     local topic="/control/command/actuation_cmd"
-    # トピックが存在するかチェック
-    if ! ros2 topic list | grep -xq "$topic"; then
+    # トピックが存在するかチェック（BrokenPipeError回避）
+    local topic_exists
+    topic_exists=$(ros2 topic list 2>/dev/null | grep -x "$topic" || true)
+    if [[ -z $topic_exists ]]; then
         echo "MISSING"
         return 1
     fi
@@ -175,7 +177,7 @@ check_actuation_cmd() {
     accel_cmd=$(echo "$msg" | grep "accel_cmd:" | sed 's/.*accel_cmd: \([0-9.-][0-9.-]*\).*/\1/')
     brake_cmd=$(echo "$msg" | grep "brake_cmd:" | sed 's/.*brake_cmd: \([0-9.-][0-9.-]*\).*/\1/')
     # 値が取得できたかチェック
-    if [[ -z "$accel_cmd" || -z "$brake_cmd" ]]; then
+    if [[ -z $accel_cmd || -z $brake_cmd ]]; then
         echo "PARSE_ERROR"
         return 1
     fi
@@ -183,7 +185,7 @@ check_actuation_cmd() {
     local accel_ok brake_ok
     accel_ok=$(awk -v a="$accel_cmd" 'BEGIN{exit !(a>0)}' && echo "true" || echo "false")
     brake_ok=$(awk -v b="$brake_cmd" 'BEGIN{exit !(b==0.0)}' && echo "true" || echo "false")
-    if [[ "$accel_ok" == "true" && "$brake_ok" == "true" ]]; then
+    if [[ $accel_ok == "true" && $brake_ok == "true" ]]; then
         echo "PASS (accel:$accel_cmd, brake:$brake_cmd)"
         return 0
     else
