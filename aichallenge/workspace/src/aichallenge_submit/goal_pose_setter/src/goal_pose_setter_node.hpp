@@ -33,7 +33,11 @@ private:
     void on_timer();
 
     rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ekf_trigger_client_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pose_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
+    
+    geometry_msgs::msg::PoseStamped goal_pose_;
+    
     bool stop_initializing_pose_ = false;
     int delay_count_ = 0;
 };
