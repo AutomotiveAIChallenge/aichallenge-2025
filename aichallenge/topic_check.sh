@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TIMEOUT=3
-HZ_SECS=2
+HZ_SECS=5
 HZ_WINDOW=2
 THRESHOLD_HZ=5.0
 LOG_FILE="$REPO_ROOT/output/latest/topic_check.txt"
