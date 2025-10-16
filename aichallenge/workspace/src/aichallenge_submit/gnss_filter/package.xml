@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>gnss_filter</name>
+  <version>1.0.0</version>
+  <description>GNSS signal filtering node to handle multipath, signal loss, and accuracy issues</description>
+  <maintainer email="your.email@example.com">Your Name</maintainer>
+  <license>Apache License 2.0</license>
+
+  <!-- ビルドツール -->
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <!-- ビルド時依存 -->
+  <build_depend>autoware_cmake</build_depend>
+  <build_depend>libboost-dev</build_depend>
+
+  <!-- 実行時依存 -->
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <!-- テスト依存 -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>autoware_lint_common</test_depend>
+
+  <!-- ビルドタイプ -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

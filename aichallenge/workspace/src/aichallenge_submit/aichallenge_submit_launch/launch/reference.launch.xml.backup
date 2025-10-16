@@ -90,7 +90,7 @@
       <arg name="output_twist_name" value="twist"/>
       <arg name="output_twist_with_covariance_name" value="twist_with_covariance"/>
       <arg name="proc_stddev_vx_c" value="10.0"/>
-      <arg name="proc_stddev_wz_c" value="10.0"/>
+      <arg name="proc_stddev_wz_c" value="5.0"/>
       <arg name="pose_additional_delay" value="$(var pose_additional_delay_var)"/>
       <arg name="extend_state_step" value="100"/>
     </include>
