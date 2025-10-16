@@ -19,7 +19,7 @@ PYTHON_SCRIPT="$SCRIPT_DIR/download_submission.py"
 # Default values
 OUTPUT_DIR="./downloads"
 # API_BASE_URL="${API_BASE_URL:-http://localhost:8000}"
-API_BASE_URL="https://dev.aichallenge-board.jsae.or.jp"
+API_BASE_URL="https://aichallenge-board.jsae.or.jp"
 
 # Function to print colored output
 print_info() {
