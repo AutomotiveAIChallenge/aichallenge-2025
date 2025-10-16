@@ -44,7 +44,7 @@ Options:
 
 例:
   source aichallenge/workspace/install/setup.bash
-  bash vehicle/topic_check.sh --timeout 20
+  bash topic_check.sh --timeout 20
 EOF
 }
 
