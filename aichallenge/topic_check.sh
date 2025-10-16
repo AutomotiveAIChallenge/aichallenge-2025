@@ -56,33 +56,48 @@ require_cmd() {
 }
 
 print_lists() {
-    echo "[Required Topics]"; printf '%s\n' "${CRITICAL_TOPICS[@]}"
+    echo "[Required Topics]"
+    printf '%s\n' "${CRITICAL_TOPICS[@]}"
 }
 
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --timeout)
-                TIMEOUT=${2:-10}; shift 2;;
-            --hz-secs)
-                HZ_SECS=${2:-5}; shift 2;;
-            --hz-window)
-                HZ_WINDOW=${2:-20}; shift 2;;
-            --output)
-                if command -v realpath >/dev/null 2>&1; then
-                    LOG_FILE=$(realpath "$2")
-                elif command -v readlink >/dev/null 2>&1; then
-                    LOG_FILE=$(readlink -f "$2" 2>/dev/null || echo "$2")
-                else
-                    LOG_FILE="$2"
-                fi
-                shift 2;;
-            --list)
-                print_lists; exit 0;;
-            -h|--help)
-                usage; exit 0;;
-            *)
-                echo "不明な引数: $1"; usage; exit 2;;
+        --timeout)
+            TIMEOUT=${2:-10}
+            shift 2
+            ;;
+        --hz-secs)
+            HZ_SECS=${2:-5}
+            shift 2
+            ;;
+        --hz-window)
+            HZ_WINDOW=${2:-20}
+            shift 2
+            ;;
+        --output)
+            if command -v realpath >/dev/null 2>&1; then
+                LOG_FILE=$(realpath "$2")
+            elif command -v readlink >/dev/null 2>&1; then
+                LOG_FILE=$(readlink -f "$2" 2>/dev/null || echo "$2")
+            else
+                LOG_FILE="$2"
+            fi
+            shift 2
+            ;;
+        --list)
+            print_lists
+            exit 0
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "不明な引数: $1"
+            usage
+            exit 2
+            ;;
         esac
     done
 }
@@ -98,7 +113,7 @@ collect_topics_once() {
 }
 
 all_required_present_within_timeout() {
-    local -r deadline=$(( $(date +%s) + TIMEOUT ))
+    local -r deadline=$(($(date +%s) + TIMEOUT))
     local -a remaining=("${CRITICAL_TOPICS[@]}")
     local listed
     while :; do
@@ -110,10 +125,12 @@ all_required_present_within_timeout() {
             fi
         done
         if [[ ${#still_missing[@]} -eq 0 ]]; then
-            echo "$listed"; return 0
+            echo "$listed"
+            return 0
         fi
-        if (( $(date +%s) >= deadline )); then
-            echo "$listed"; return 1
+        if (($(date +%s) >= deadline)); then
+            echo "$listed"
+            return 1
         fi
         sleep 1
         remaining=("${still_missing[@]}")
@@ -124,7 +141,8 @@ measure_hz() {
     local topic="$1"
     # timeout 不在時はスキップ
     if ! command -v timeout >/dev/null 2>&1; then
-        echo "SKIP(no-timeout)"; return 0
+        echo "SKIP(no-timeout)"
+        return 0
     fi
     # ros2 topic hz を一定秒観測し、出力から average rate を抽出
     local out rc rate
@@ -133,7 +151,7 @@ measure_hz() {
     rc=$?
     set -e
     rate=$(printf '%s\n' "$out" | sed -n 's/.*average rate: \([0-9.][0-9.]*\).*/\1/p' | tail -n 1)
-    if [[ -n "$rate" ]]; then
+    if [[ -n $rate ]]; then
         echo "$rate"
     else
         echo "NA"
@@ -141,7 +159,7 @@ measure_hz() {
 }
 
 is_number() {
-    [[ "$1" =~ ^[0-9]+([.][0-9]+)?$ ]]
+    [[ $1 =~ ^[0-9]+([.][0-9]+)?$ ]]
 }
 
 is_ge() {
@@ -169,7 +187,7 @@ main() {
         fi
     done
 
-    if (( ${#missing_required[@]} > 0 )); then
+    if ((${#missing_required[@]} > 0)); then
         echo "[MISSING] 必須トピック（不足）:"
         printf '  %s\n' "${missing_required[@]}"
     fi
@@ -189,11 +207,11 @@ main() {
                     printf '%-50s %-10s %s\n' "$t" "$hz" "PASS"
                 else
                     printf '%-50s %-10s %s\n' "$t" "$hz" "FAIL"
-                    slow_count=$((slow_count+1))
+                    slow_count=$((slow_count + 1))
                 fi
             else
                 printf '%-50s %-10s %s\n' "$t" "$hz" "FAIL"
-                na_count=$((na_count+1))
+                na_count=$((na_count + 1))
             fi
         else
             printf '%-50s %-10s %s\n' "$t" "missing" "FAIL"
@@ -210,8 +228,8 @@ main() {
     echo "Log file        : $LOG_FILE"
 
     rc=0
-    if (( ${#missing_required[@]} > 0 )); then rc=2; fi
-    if (( slow_count > 0 || na_count > 0 )); then rc=3; fi
+    if ((${#missing_required[@]} > 0)); then rc=2; fi
+    if ((slow_count > 0 || na_count > 0)); then rc=3; fi
     exit "$rc"
 }
 
