@@ -157,7 +157,40 @@ measure_hz() {
         echo "NA"
     fi
 }
-
+check_actuation_cmd() {
+    local topic="/control/command/actuation_cmd"
+    # トピックが存在するかチェック
+    if ! ros2 topic list | grep -xq "$topic"; then
+        echo "MISSING"
+        return 1
+    fi
+    # メッセージを1回取得
+    local msg
+    if ! msg=$(timeout 3s ros2 topic echo "$topic" --once 2>/dev/null); then
+        echo "NO_DATA"
+        return 1
+    fi
+    # accel_cmd と brake_cmd を抽出
+    local accel_cmd brake_cmd
+    accel_cmd=$(echo "$msg" | grep "accel_cmd:" | sed 's/.*accel_cmd: \([0-9.-][0-9.-]*\).*/\1/')
+    brake_cmd=$(echo "$msg" | grep "brake_cmd:" | sed 's/.*brake_cmd: \([0-9.-][0-9.-]*\).*/\1/')
+    # 値が取得できたかチェック
+    if [[ -z "$accel_cmd" || -z "$brake_cmd" ]]; then
+        echo "PARSE_ERROR"
+        return 1
+    fi
+    # accel_cmd > 0 かつ brake_cmd = 0.0 をチェック
+    local accel_ok brake_ok
+    accel_ok=$(awk -v a="$accel_cmd" 'BEGIN{exit !(a>0)}' && echo "true" || echo "false")
+    brake_ok=$(awk -v b="$brake_cmd" 'BEGIN{exit !(b==0.0)}' && echo "true" || echo "false")
+    if [[ "$accel_ok" == "true" && "$brake_ok" == "true" ]]; then
+        echo "PASS (accel:$accel_cmd, brake:$brake_cmd)"
+        return 0
+    else
+        echo "FAIL (accel:$accel_cmd, brake:$brake_cmd)"
+        return 1
+    fi
+}
 is_number() {
     [[ $1 =~ ^[0-9]+([.][0-9]+)?$ ]]
 }
@@ -217,7 +250,12 @@ main() {
             printf '%-50s %-10s %s\n' "$t" "missing" "FAIL"
         fi
     done
-
+    # actuation_cmd の内容チェック
+    echo ""
+    echo "[INFO] actuation_cmd 内容チェック（accel_cmd > 0 かつ brake_cmd = 0.0）"
+    actuation_result=$(check_actuation_cmd)
+    actuation_rc=$?
+    printf '%-50s %s\n' "/control/command/actuation_cmd" "$actuation_result"
     echo ""
     echo "===== SUMMARY ====="
     echo "Total required : ${#CRITICAL_TOPICS[@]}"
@@ -225,11 +263,13 @@ main() {
     echo "Hz window/sec  : ${HZ_WINDOW}/${HZ_SECS}"
     echo "Hz threshold   : ${THRESHOLD_HZ}"
     echo "Hz < threshold : ${slow_count} (NA含む: ${na_count})"
+    echo "Actuation check : $(if ((actuation_rc == 0)); then echo "PASS"; else echo "FAIL"; fi)"
     echo "Log file        : $LOG_FILE"
 
     rc=0
     if ((${#missing_required[@]} > 0)); then rc=2; fi
     if ((slow_count > 0 || na_count > 0)); then rc=3; fi
+    if ((actuation_rc != 0)); then rc=4; fi
     exit "$rc"
 }
 
