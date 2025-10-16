@@ -37,4 +37,4 @@ echo "Connecting... Target Vehicle: $TARGET_ID, User: $USERNAME"
 autossh -AC -M 0 -p "$PORT" \
     -o ServerAliveInterval=60 \
     -o ServerAliveCountMax=3 \
-    "${USERNAME}@57.180.63.135"
+    "${USERNAME}@zenoh.dev.aichallenge-board.jsae.or.jp"
