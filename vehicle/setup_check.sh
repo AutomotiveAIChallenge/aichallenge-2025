@@ -224,15 +224,6 @@ check_network() {
         log "   Fix: Check the physical cable and network configuration."
         record_result "fail"
     fi
-    # Wi-Fi接続の確認
-    if nmcli connection show --active | grep -q "netgear-wifi"; then
-        log "${OK} Netgear Wi-Fi connection (netgear-wifi) is active."
-        record_result "pass"
-    else
-        log "${FAIL} No active Netgear Wi-Fi connection (netgear-wifi)."
-        log "   Fix: Check the Wi-Fi settings."
-        record_result "fail"
-    fi
 
     # リバースSSHサービス状態確認
     if systemctl is-active --quiet reverse-ssh.service; then
