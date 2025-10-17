@@ -35,53 +35,9 @@ SimplePurePursuit::SimplePurePursuit()
   sub_trajectory_ = create_subscription<Trajectory>(
     "input/trajectory", bv_qos, [this](const Trajectory::SharedPtr msg) { trajectory_ = msg; });
 
-  // ★★★ パラメータコールバックを追加 ★★★
-  param_callback_handle_ = this->add_on_set_parameters_callback(
-    std::bind(&SimplePurePursuit::onParameter, this, std::placeholders::_1));
-  
-  RCLCPP_INFO(this->get_logger(), "SimplePurePursuit initialized with external_target_vel=%.2f", external_target_vel_);
-
   using namespace std::literals::chrono_literals;
   timer_ =
     rclcpp::create_timer(this, get_clock(), 10ms, std::bind(&SimplePurePursuit::onTimer, this));
-}
-
-// ★★★ パラメータ変更時のコールバック関数（新規追加）★★★
-rcl_interfaces::msg::SetParametersResult SimplePurePursuit::onParameter(
-  const std::vector<rclcpp::Parameter> & parameters)
-{
-  rcl_interfaces::msg::SetParametersResult result;
-  result.successful = true;
-  
-  for (const auto & param : parameters) {
-    if (param.get_name() == "external_target_vel") {
-      external_target_vel_ = param.as_double();
-      RCLCPP_INFO(this->get_logger(), "✅ external_target_vel updated to %.2f m/s", external_target_vel_);
-    }
-    else if (param.get_name() == "use_external_target_vel") {
-      use_external_target_vel_ = param.as_bool();
-      RCLCPP_INFO(this->get_logger(), "✅ use_external_target_vel updated to %s", 
-                  use_external_target_vel_ ? "true" : "false");
-    }
-    else if (param.get_name() == "lookahead_gain") {
-      lookahead_gain_ = param.as_double();
-      RCLCPP_INFO(this->get_logger(), "✅ lookahead_gain updated to %.2f", lookahead_gain_);
-    }
-    else if (param.get_name() == "lookahead_min_distance") {
-      lookahead_min_distance_ = param.as_double();
-      RCLCPP_INFO(this->get_logger(), "✅ lookahead_min_distance updated to %.2f", lookahead_min_distance_);
-    }
-    else if (param.get_name() == "speed_proportional_gain") {
-      speed_proportional_gain_ = param.as_double();
-      RCLCPP_INFO(this->get_logger(), "✅ speed_proportional_gain updated to %.2f", speed_proportional_gain_);
-    }
-    else if (param.get_name() == "steering_tire_angle_gain") {
-      steering_tire_angle_gain_ = param.as_double();
-      RCLCPP_INFO(this->get_logger(), "✅ steering_tire_angle_gain updated to %.2f", steering_tire_angle_gain_);
-    }
-  }
-  
-  return result;
 }
 
 AckermannControlCommand zeroAckermannControlCommand(rclcpp::Time stamp)
