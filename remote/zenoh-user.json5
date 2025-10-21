@@ -180,7 +180,7 @@
   /// that zenoh runtime will use.
   /// If not set, a random unsigned 128bit integer will be used.
   /// WARNING: this id must be unique in your zenoh network.
-  id: "61696368616c6c656e676532303235aa",
+  /// id: "61696368616c6c656e676532303235aa",
 
   ////
   //// mode: The bridge's mode (router, peer or client)
