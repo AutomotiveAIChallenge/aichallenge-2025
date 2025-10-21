@@ -274,7 +274,7 @@ main() {
     actuation_result=$(check_actuation_cmd) || true
     actuation_rc=$?
     printf '%-50s %s\n' "/control/command/actuation_cmd" "$actuation_result"
-    
+
     # awsim トピックチェック
     echo ""
     echo "[INFO] AWSIM トピックチェック（実車環境確認）"
