@@ -24,7 +24,7 @@ x-autoware-base: &autoware-base
   working_dir: /aichallenge
 
 x-racing_kart_interface-base: &racing_kart_interface-base
-  image: "ghcr.io/tier4/racing_kart_interface:latest-experiment"
+  image: "ghcr.io/tier4/racing_kart_interface:latest"
   privileged: true
   pull_policy: never
   network_mode: host
