@@ -193,6 +193,22 @@ check_actuation_cmd() {
         return 1
     fi
 }
+
+check_awsim_topics() {
+    # awsim を含むトピックがないことを確認（実車環境確認）
+    local topic_list awsim_topics
+    topic_list=$(ros2 topic list 2>/dev/null) || return 1
+    # set -o pipefail の影響を避けるため、別々に実行
+    awsim_topics=$(echo "$topic_list" | grep -i awsim || true)
+    if [[ -z $awsim_topics ]]; then
+        echo "PASS (no awsim topics found)"
+        return 0
+    else
+        echo "FAIL (awsim topics found: $(echo "$awsim_topics" | tr '\n' ' '))"
+        return 1
+    fi
+}
+
 is_number() {
     [[ $1 =~ ^[0-9]+([.][0-9]+)?$ ]]
 }
@@ -255,9 +271,16 @@ main() {
     # actuation_cmd の内容チェック
     echo ""
     echo "[INFO] actuation_cmd 内容チェック（accel_cmd > 0 かつ brake_cmd = 0.0）"
-    actuation_result=$(check_actuation_cmd)
+    actuation_result=$(check_actuation_cmd) || true
     actuation_rc=$?
     printf '%-50s %s\n' "/control/command/actuation_cmd" "$actuation_result"
+
+    # awsim トピックチェック
+    echo ""
+    echo "[INFO] AWSIM トピックチェック（実車環境確認）"
+    awsim_result=$(check_awsim_topics) || true
+    awsim_rc=$?
+    printf '%-50s %s\n' "AWSIM topics absence" "$awsim_result"
     echo ""
     echo "===== SUMMARY ====="
     echo "Total required : ${#CRITICAL_TOPICS[@]}"
@@ -266,12 +289,14 @@ main() {
     echo "Hz threshold   : ${THRESHOLD_HZ}"
     echo "Hz < threshold : ${slow_count} (NA含む: ${na_count})"
     echo "Actuation check : $(if ((actuation_rc == 0)); then echo "PASS"; else echo "FAIL"; fi)"
+    echo "AWSIM check     : $(if ((awsim_rc == 0)); then echo "PASS"; else echo "FAIL"; fi)"
     echo "Log file        : $LOG_FILE"
 
     rc=0
     if ((${#missing_required[@]} > 0)); then rc=2; fi
     if ((slow_count > 0 || na_count > 0)); then rc=3; fi
     if ((actuation_rc != 0)); then rc=4; fi
+    if ((awsim_rc != 0)); then rc=5; fi
     exit "$rc"
 }
 
