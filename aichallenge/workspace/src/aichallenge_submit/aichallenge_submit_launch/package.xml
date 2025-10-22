@@ -12,6 +12,7 @@
   <exec_depend>tier4_vehicle_launch</exec_depend>
   <exec_depend>global_parameter_loader</exec_depend>
   <exec_depend>goal_pose_setter</exec_depend>
+  <exec_depend>goal_checker</exec_depend><!-- 追加 -->
   <exec_depend>map_loader</exec_depend>
   <exec_depend>map_tf_generator</exec_depend>
   <exec_depend>imu_corrector</exec_depend>
