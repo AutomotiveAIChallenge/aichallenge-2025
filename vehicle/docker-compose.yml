@@ -1,5 +1,5 @@
 x-autoware-base: &autoware-base
-  image: "aichallenge-2025-dev-${USER}"
+  image: "aichallenge-2025-dev"
   privileged: true
   pull_policy: never
   network_mode: host
@@ -53,7 +53,7 @@ services:
     container_name: "zenoh"
     stop_grace_period: 0.1s
     working_dir: /vehicle
-    command: ["bash", "-c", "case ${VEHICLE_ID} in A2) PORT=7448;; A3) PORT=7449;; A6) PORT=7450;; A7) PORT=7451;; *) echo 'Invalid VEHICLE_ID'; exit 1;; esac && zenoh-bridge-ros2dds client -e tls/57.180.63.135:$$PORT -c /vehicle/zenoh.json5"]
+    command: ["bash", "-c", "case ${VEHICLE_ID} in A2) PORT=7448;; A3) PORT=7449;; A6) PORT=7450;; A7) PORT=7451;; *) echo 'Invalid VEHICLE_ID'; exit 1;; esac && zenoh-bridge-ros2dds client -e tls/zenoh.dev.aichallenge-board.jsae.or.jp:$$PORT -c /vehicle/zenoh.json5"]
 
   # Driver service
   # Driver build service
@@ -84,10 +84,3 @@ services:
     container_name: "aic-2025-rviz2"
     stop_grace_period: 0.1s
     command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_rviz.bash remote"]
-
-  # Aic-build service
-  aic-build:
-    <<: *autoware-base
-    container_name: "aic-2025-build"
-    stop_grace_period: 0.1s
-    command: ['bash', '-c', 'source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && timeout 1800 bash build_autoware.bash|| echo "Build failed or timed out"']
