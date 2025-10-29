@@ -166,6 +166,12 @@ cleanup() {
 move_window() {
     echo "Move window"
 
+    if ! command -v wmctrl >/dev/null; then
+        echo "wmctrl command not available. Skipping window management."
+        sleep 5
+        return 0
+    fi
+
     local has_gpu has_awsim has_rviz
     has_gpu=$(command -v nvidia-smi >/dev/null && echo 1 || echo 0)
 
