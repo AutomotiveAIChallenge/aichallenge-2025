@@ -166,7 +166,7 @@ cleanup() {
 move_window() {
     echo "Move window"
 
-    if ! command -v wmctrl >/dev/null; then
+    if ! wmctrl -l >/dev/null 2>&1; then
         echo "wmctrl command not available. Skipping window management."
         sleep 5
         return 0
