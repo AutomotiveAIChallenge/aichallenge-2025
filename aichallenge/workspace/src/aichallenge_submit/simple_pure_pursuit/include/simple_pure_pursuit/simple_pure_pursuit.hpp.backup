@@ -33,34 +33,29 @@ class SimplePurePursuit : public rclcpp::Node {
   rclcpp::Publisher<AckermannControlCommand>::SharedPtr pub_cmd_;
   rclcpp::Publisher<AckermannControlCommand>::SharedPtr pub_raw_cmd_;
   rclcpp::Publisher<PointStamped>::SharedPtr pub_lookahead_point_;  
-  
+
   // timer
   rclcpp::TimerBase::SharedPtr timer_;
-  
+
   // updated by subscribers
   Trajectory::SharedPtr trajectory_;
   Odometry::SharedPtr odometry_;
-  
+
+
+
   // pure pursuit parameters
-  // ★★★ const を削除して動的変更可能に ★★★
-  double wheel_base_;
-  double lookahead_gain_;
-  double lookahead_min_distance_;
-  double speed_proportional_gain_;
-  bool use_external_target_vel_;
-  double external_target_vel_;
-  double steering_tire_angle_gain_;
-  
+  const double wheel_base_;
+  const double lookahead_gain_;
+  const double lookahead_min_distance_;
+  const double speed_proportional_gain_;
+  const bool use_external_target_vel_;
+  const double external_target_vel_;
+  const double steering_tire_angle_gain_;
+
+
  private:
   void onTimer();
   bool subscribeMessageAvailable();
-  
-  // ★★★ パラメータ変更時のコールバック（追加）★★★
-  rcl_interfaces::msg::SetParametersResult onParameter(
-    const std::vector<rclcpp::Parameter> & parameters);
-  
-  // ★★★ コールバックハンドル（追加）★★★
-  OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
 };
 
 }  // namespace simple_pure_pursuit

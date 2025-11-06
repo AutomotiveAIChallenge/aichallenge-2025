@@ -90,7 +90,7 @@
       <arg name="output_twist_name" value="twist"/>
       <arg name="output_twist_with_covariance_name" value="twist_with_covariance"/>
       <arg name="proc_stddev_vx_c" value="10.0"/>
-      <arg name="proc_stddev_wz_c" value="10.0"/>
+      <arg name="proc_stddev_wz_c" value="5.0"/>
       <arg name="pose_additional_delay" value="$(var pose_additional_delay_var)"/>
       <arg name="extend_state_step" value="100"/>
     </include>
@@ -132,8 +132,8 @@
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
     <param name="use_external_target_vel" value="true"/>
     <param name="external_target_vel" value="3.0"/>
-    <param name="lookahead_gain" value="1.0"/>
-    <param name="lookahead_min_distance" value="3.0"/>
+    <param name="lookahead_gain" value="0.5"/>
+    <param name="lookahead_min_distance" value="3.5"/>
     <param name="speed_proportional_gain" value="1.0"/>
     <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
 

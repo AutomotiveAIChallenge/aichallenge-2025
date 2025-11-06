@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- 引数定義 -->
+  <arg name="input_topic" default="imu_raw" 
+       description="Input raw IMU topic name"/>
+  <arg name="velocity_topic" default="/localization/twist_estimator/twist_with_covariance" 
+       description="Vehicle velocity topic for stationary detection"/>
+  <arg name="output_topic" default="imu_filtered" 
+       description="Output filtered IMU topic name"/>
+  <arg name="param_file" default="$(find-pkg-share imu_filter)/config/imu_filter.param.yaml"
+       description="Parameter file path"/>
+
+  <!-- IMUフィルタノード起動 -->
+  <node pkg="imu_filter" exec="imu_filter" name="imu_filter" output="screen">
+    <!-- トピックのリマップ -->
+    <remap from="input" to="$(var input_topic)"/>
+    <remap from="velocity" to="$(var velocity_topic)"/>
+    <remap from="output" to="$(var output_topic)"/>
+    
+    <!-- パラメータファイル読み込み -->
+    <param from="$(var param_file)"/>
+  </node>
+</launch>
