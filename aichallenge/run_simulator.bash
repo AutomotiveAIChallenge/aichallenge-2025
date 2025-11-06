@@ -3,7 +3,7 @@ AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM
 
 mode="${1}"
 
-if command -v nvidia-smi &>/dev/null && [[ -e /dev/nvidia0 ]]; then
+if [[ -e /dev/nvidia0 ]]; then
     echo "[INFO] NVIDIA GPU detected"
     opts=()
 else
@@ -19,7 +19,11 @@ case "${mode}" in
 esac
 
 # shellcheck disable=SC1091
+source /opt/ros/humble/setup.bash
+# shellcheck disable=SC1091
+source /autoware/install/setup.bash
+# shellcheck disable=SC1091
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
 sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
-$AWSIM_DIRECTORY/AWSIM.x86_64 "${opts[@]}"
+$AWSIM_DIRECTORY/AWSIM.x86_64 "${opts[@]}" --timeout 86400.0

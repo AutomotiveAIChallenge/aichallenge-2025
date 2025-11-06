@@ -67,6 +67,32 @@ graceful_shutdown() {
     fi
 }
 
+# Check if rosbag mode is enabled
+IS_ROSBAG_MODE=0
+for arg in "$@"; do
+    if [ "$arg" = "rosbag" ]; then
+        IS_ROSBAG_MODE=1
+        break
+    fi
+done
+
+if [ "$IS_ROSBAG_MODE" -eq 1 ]; then
+    echo "ROS Bag recording mode enabled."
+fi
+
+# Check if capture mode is requested
+IS_CAPTURE_MODE=0
+for arg in "$@"; do
+    if [ "$arg" = "capture" ]; then
+        IS_CAPTURE_MODE=1
+        break
+    fi
+done
+
+if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
+    echo "Screen capture mode enabled."
+fi
+
 # Function to handle Ctrl+C and normal termination
 cleanup() {
     echo "Termination signal received. Cleaning up..."
@@ -219,6 +245,10 @@ ln -nfs "$OUTPUT_DIRECTORY" latest
 cd "$OUTPUT_DIRECTORY" || exit
 
 # shellcheck disable=SC1091
+source /opt/ros/humble/setup.bash
+# shellcheck disable=SC1091
+source /autoware/install/setup.bash
+# shellcheck disable=SC1091
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
 sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
@@ -264,22 +294,34 @@ move_window
 bash /aichallenge/publish.bash check
 move_window
 bash /aichallenge/publish.bash all
-bash /aichallenge/publish.bash screen
+# Capture screen
+if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
+    bash /aichallenge/publish.bash screen
+    echo "Screen capture started."
+else
+    echo "Screen capture skipped."
+fi
 
 # Start recording rosbag with nohup
-echo "Start rosbag"
-nohup /aichallenge/record_rosbag.bash >/dev/null 2>&1 &
-PID_ROSBAG=$!
-echo "ROS Bag PID: $PID_ROSBAG"
-echo "$PID_ROSBAG" >>"$PID_FILE"
-# recursively get child processes
-get_child_pids "$PID_ROSBAG"
-# Wait a moment for rosbag to initialize and verify it's running
-sleep 2
-if ! kill -0 "$PID_ROSBAG" 2>/dev/null; then
-    echo "Warning: Rosbag process is not running"
+if [ "$IS_ROSBAG_MODE" -eq 1 ]; then
+    echo "Start rosbag"
+    nohup /aichallenge/record_rosbag.bash >/dev/null 2>&1 &
+    PID_ROSBAG=$!
+    echo "ROS Bag PID: $PID_ROSBAG"
+    echo "$PID_ROSBAG" >>"$PID_FILE"
+    # recursively get child processes
+    get_child_pids "$PID_ROSBAG"
+    # Wait a moment for rosbag to initialize and verify it's running
+    sleep 2
+    if ! kill -0 "$PID_ROSBAG" 2>/dev/null; then
+        echo "Warning: Rosbag process is not running"
+    else
+        echo "Rosbag recording started successfully"
+    fi
 else
-    echo "Rosbag recording started successfully"
+    # ROS Bagモードでない場合、PIDをクリアにしておく
+    PID_ROSBAG=""
+    echo "ROS Bag recording skipped."
 fi
 
 # Wait for AWSIM to finish (this is the main process we're waiting for)

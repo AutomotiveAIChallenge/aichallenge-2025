@@ -5,9 +5,10 @@ SHELL := /bin/bash
 
 # 既にコンテナが立ち上がっている場合はログの表示を行います。
 # autowareのみ起動・ログ表示
-autoware:
-	docker compose up -d autoware
+autoware-vehicle:
+	RUN_MODE=vehicle docker compose up -d autoware
 	docker compose logs -f autoware
+
 
 # racing kartの起動・ログ表示
 driver:
@@ -19,12 +20,7 @@ zenoh:
 	docker compose up -d zenoh
 	docker compose logs -f zenoh
 
-# aicコンテナにてros2 bag record -a
-#rosbag:
-#	docker compose up -d rosbag 
-#	docker compose logs -f rosbag
-
-run-full-system:
+run-full-kart-system:
 	docker compose up -d driver
 	docker compose up -d autoware
 # 	$(MAKE) rosbag
@@ -52,6 +48,42 @@ download:
 		fi; \
 	fi
 
+autoware-sim:
+	@echo "Start Autoware(AWSIM mode)"
+	RUN_MODE=awsim docker compose up -d autoware
+	docker compose logs -f autoware
+
+ifeq ($(ROSBAG),true)
+    ifeq ($(CAPTURE),true)
+        # ROSBAG=true かつ CAPTURE=true の場合
+        RUN_MODE_VAL := "rosbag capture"
+        LOG_MSG := "--- Starting Evaluation (With ROSBAG & CAPTURE) ---"
+    else
+        # ROSBAG=true だが CAPTURE!=true の場合
+        RUN_MODE_VAL := "rosbag"
+        LOG_MSG := "--- Starting Evaluation (With ROSBAG) ---"
+    endif
+else
+    # 2. ROSBAG!=true のレシピ
+    ifeq ($(CAPTURE),true)
+        # ROSBAG!=true かつ CAPTURE=true の場合
+        RUN_MODE_VAL := "capture"
+        LOG_MSG := "--- Starting Evaluation (no ROSBAG, With CAPTURE) ---"
+    else
+        # ROSBAG!=true かつ CAPTURE!=true の場合
+        RUN_MODE_VAL := ""
+        LOG_MSG := "--- Starting Evaluation (Live & Clean) ---"
+    endif
+endif
+
+# make run-sim-eval ROSBAG=true CAPTURE=true
+run-sim-eval:
+	@echo $(LOG_MSG)
+	@echo "RUN_MODE will be set to: $(RUN_MODE_VAL)"
+	RUN_MODE=$(RUN_MODE_VAL) \
+	docker compose up -d sim-eval
+	docker compose logs -f sim-eval
+
 # rvizの起動・ログ表示
 rviz2:
 	docker compose stop rviz2
@@ -59,26 +91,28 @@ rviz2:
 	docker compose logs -f rviz2
 
 sim:
-	@sudo ip link set multicast on lo
-	@sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 	@echo "Start AWSIM"
-	@/aichallenge/simulator/AWSIM/AWSIM.x86_64 --timeout 86400.0 &
-
-aw:
-	@echo "Start Auwoware"
-	@bash run_autoware.bash awsim
+	docker compose up -d simulator
+	docker compose logs -f simulator
 
 init:
-	@./publish_initialpose.py
-
+	CMD=python3 ./publish_initialpose.py \
+	docker compose up -d aw-cmd
+	docker compose logs -f aw-cmd
+	
 start:
 	@echo "Start control"
-	ros2 topic pub -t 10 /control/control_mode_request_topic std_msgs/msg/Bool '{data: true}' >/dev/null &
-
+	CMD="ros2 topic pub -t 10 /awsim/control_mode_request_topic std_msgs/msg/Bool '{data: true}'" \
+	docker compose up -d aw-cmd
+	docker compose logs -f aw-cmd
+	
 reset:
 	@echo "Reset simulation"
-	@ros2 topic pub --once /aichallenge/awsim/reset std_msgs/msg/Empty {} >/dev/null &
-	@./publish_initialpose.py
+	CMD="ros2 topic pub --once /aichallenge/awsim/reset std_msgs/msg/Empty {} | python3 ./publish_initialpose.py" \
+	docker compose up -d aw-cmd
+	docker compose logs -f aw-cmd
 
-all: sim aw
-	@echo ""
+# aicコンテナにてros2 bag record -a
+#rosbag:
+#	docker compose up -d rosbag 
+#	docker compose logs -f rosbag
