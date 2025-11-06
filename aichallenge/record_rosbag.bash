@@ -64,4 +64,4 @@ TOPICS=(
     "/vehicle/status/velocity_status"
 )
 
-ros2 bag record "${TOPICS[@]}" -o rosbag2_autoware
+ros2 bag record "${TOPICS[@]}" -s mcap -o rosbag2_autoware
