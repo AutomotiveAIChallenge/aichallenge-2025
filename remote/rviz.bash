@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
-VEHICLE_DIR="${REPO_ROOT}/vehicle"
-COMPOSE_FILE="${VEHICLE_DIR}/docker-compose.yml"
+AIC_DIR="${REPO_ROOT}/aichallenge"
+COMPOSE_FILE="${AIC_DIR}/docker-compose.yml"
 
 usage() {
     cat <<'USAGE'
@@ -15,13 +15,13 @@ Usage:
 USAGE
 }
 
-if [ ! -d "${VEHICLE_DIR}" ]; then
-    echo "Error: vehicle directory not found at '${VEHICLE_DIR}'." >&2
+if [ ! -d "${AIC_DIR}" ]; then
+    echo "Error: vehicle directory not found at '${AIC_DIR}'." >&2
     exit 1
 fi
 
-if [ ! -f "${VEHICLE_DIR}/Makefile" ]; then
-    echo "Error: Makefile not found in '${VEHICLE_DIR}'." >&2
+if [ ! -f "${AIC_DIR}/Makefile" ]; then
+    echo "Error: Makefile not found in '${AIC_DIR}'." >&2
     exit 1
 fi
 
@@ -61,8 +61,8 @@ fi
 
 case "${mode}" in
 start)
-    echo "Running 'make rviz2' inside '${VEHICLE_DIR}'."
-    cd "${VEHICLE_DIR}"
+    echo "Running 'make rviz2' inside '${AIC_DIR}'."
+    cd "${AIC_DIR}"
     make rviz2 "$@"
     ;;
 down)
@@ -72,8 +72,8 @@ down)
 restart)
     echo "Restarting 'rviz2' service."
     docker compose -f "${COMPOSE_FILE}" rm -f -s rviz2
-    echo "Running 'make rviz2' inside '${VEHICLE_DIR}' after restart."
-    cd "${VEHICLE_DIR}"
+    echo "Running 'make rviz2' inside '${AIC_DIR}' after restart."
+    cd "${AIC_DIR}"
     make rviz2 "$@"
     ;;
 *)
