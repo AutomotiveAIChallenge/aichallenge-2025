@@ -20,8 +20,6 @@ HOST_GID=$2
 source /opt/ros/humble/setup.bash
 # shellcheck disable=SC1091
 source /autoware/install/setup.bash
-# shellcheck disable=SC1091
-source /aichallenge/workspace/install/setup.bash
 
 cd ./workspace || exit
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
