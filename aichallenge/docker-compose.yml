@@ -13,6 +13,8 @@ x-autoware-base: &autoware-base
     - RUN_MODE=
     - CMD=
   volumes:
+    - /etc/passwd:/etc/passwd:ro
+    - /etc/group:/etc/group:ro
     - ../output:/output
     - ../aichallenge:/aichallenge
     - ../remote:/remote
@@ -71,6 +73,13 @@ services:
     stop_grace_period: 0.1s
     command: ["bash", "-c", "cd /aichallenge && exec bash run_autoware.bash ${RUN_MODE}"]
 
+
+  # Autoware service
+  aic-build:
+    <<: *autoware-base 
+    container_name: "aic-2025-build"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "echo $HOST_UID1  && cd /aichallenge && exec bash build_autoware.bash ${HOST_UID} ${HOST_GID}"]
 
   simulator:
     <<: *autoware-base 

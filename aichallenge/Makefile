@@ -28,6 +28,11 @@ run-full-kart-system:
 	docker compose up -d zenoh
 	docker compose logs -f autoware driver zenoh 2>&1 | tee log/full_log.log | stdbuf -oL grep -E "(ERROR|WARN)"
 
+# autowareのbuildのみ
+build-autoware:
+	HOST_UID=$(shell id -u) HOST_GID=$(shell id -g) docker compose up -d aic-build
+	docker compose logs -f --tail="0" aic-build
+
 # Download submission data by asking for credentials interactively
 # Usage:
 #   make download [SUBMISSION_ID=<id>]
