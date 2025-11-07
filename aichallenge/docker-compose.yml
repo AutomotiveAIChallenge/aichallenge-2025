@@ -10,6 +10,8 @@ x-autoware-base: &autoware-base
     - XAUTHORITY=${XAUTHORITY}
     - QT_X11_NO_MITSHM=1
     - TZ=Asia/Tokyo
+    - RUN_MODE=
+    - CMD=
   volumes:
     - ../output:/output
     - ../aichallenge:/aichallenge
@@ -56,7 +58,6 @@ services:
     command: ["bash", "-c", "case ${VEHICLE_ID} in A2) PORT=7448;; A3) PORT=7449;; A6) PORT=7450;; A7) PORT=7451;; *) echo 'Invalid VEHICLE_ID'; exit 1;; esac && zenoh-bridge-ros2dds client -e tls/zenoh.dev.aichallenge-board.jsae.or.jp:$$PORT -c /vehicle/zenoh.json5"]
 
   # Driver service
-  # Driver build service
   driver:
     <<: *racing_kart_interface-base
     container_name: "racing_kart_interface-run"
@@ -68,19 +69,44 @@ services:
     <<: *autoware-base 
     container_name: "aic-2025-autoware"
     stop_grace_period: 0.1s
-    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_autoware.bash vehicle"]
+    command: ["bash", "-c", "cd /aichallenge && exec bash run_autoware.bash ${RUN_MODE}"]
 
-  # rosbag record 
-  rosbag:
+
+  # Autoware service
+  aic-build:
     <<: *autoware-base 
-    init: true
-    container_name: "aic-2025-rosbag"
-    stop_grace_period: 5.0s
-    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /vehicle && exec bash record_rosbag.bash"]
+    container_name: "aic-2025-build"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "cd /aichallenge && exec bash build_autoware.bash ${HOST_UID} ${HOST_GID}"]
+
+  simulator:
+    <<: *autoware-base 
+    container_name: "aic-2025-simulator"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "cd /aichallenge && exec bash run_simulator.bash"]
+
+  sim-eval:
+    <<: *autoware-base 
+    container_name: "aic-2025-eval"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "cd /aichallenge && exec bash run_evaluation.bash ${RUN_MODE} ${HOST_UID} ${HOST_GID}"]
+
+  aw-cmd:
+    <<: *autoware-base 
+    container_name: "aic-2025-cmd"
+    stop_grace_period: 0.1s
+    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec ${CMD}"]
 
   # rosbag record 
+  #rosbag:
+  #  <<: *autoware-base 
+  #  init: true
+  #  container_name: "aic-2025-rosbag"
+  #  stop_grace_period: 5.0s
+  #  command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /vehicle && exec bash record_rosbag.bash"]
+
   rviz2:
     <<: *autoware-base 
     container_name: "aic-2025-rviz2"
     stop_grace_period: 0.1s
-    command: ["bash", "-c", "source /opt/ros/humble/setup.bash && source /autoware/install/setup.bash && cd /aichallenge && exec bash run_rviz.bash remote"]
+    command: ["bash", "-c", "cd /aichallenge && exec bash run_rviz.bash remote"]

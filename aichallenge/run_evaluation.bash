@@ -1,168 +1,55 @@
 #!/bin/bash
 
-# Create a temporary file to store process IDs
-PID_FILE=$(mktemp)
-echo "Process ID file: $PID_FILE"
+IS_ROSBAG_MODE=0
+IS_CAPTURE_MODE=0
+HOST_UID=""
+HOST_GID=""
+RE_NUMBER='^[0-9]+$' # 数字のみにマッチする正規表現
+OTHER_ARGS=()        # rosbag/capture/数字 以外の引数を保持
 
-# recursively get child processes
-get_child_pids() {
-    local parent_pid=$1
-    local child_pids
+# "$@" の引数をループ処理
+for arg in "$@"; do
+    if [ "$arg" = "rosbag" ]; then
+        IS_ROSBAG_MODE=1
+        continue # 次の引数へ
+    fi
 
-    child_pids=$(pgrep -P "$parent_pid")
-    for pid in $child_pids; do
-        echo "$pid" >>"$PID_FILE"
-        get_child_pids "$pid"
-    done
-}
+    if [ "$arg" = "capture" ]; then
+        IS_CAPTURE_MODE=1
+        continue # 次の引数へ
+    fi
 
-# update process list
-update_process_list() {
-    local main_pids=("$PID_AWSIM" "$PID_AUTOWARE" "$PID_ROSBAG")
-
-    # clear the PID file
-    : >"$PID_FILE"
-
-    # record main process PIDs
-    for pid in "${main_pids[@]}"; do
-        if [[ -n $pid ]] && kill -0 "$pid" 2>/dev/null; then
-            echo "$pid" >>"$PID_FILE"
-            get_child_pids "$pid"
+    # 数字のみの引数かチェック
+    if [[ $arg =~ $RE_NUMBER ]]; then
+        if [ -z "$HOST_UID" ]; then
+            # 1つ目の数字をUIDとする
+            HOST_UID=$arg
+            continue
+        elif [ -z "$HOST_GID" ]; then
+            # 2つ目の数字をGIDとする
+            HOST_GID=$arg
+            continue
         fi
-    done
-
-    # get child processes of main processes
-    for pattern in "ros2" "autoware" "web_server" "rviz"; do
-        pgrep -f "$pattern" | while read -r pid; do
-            # check if the PID is already in the file
-            if ! grep -q "^$pid$" "$PID_FILE"; then
-                echo "$pid" >>"$PID_FILE"
-            fi
-        done
-    done
-}
-
-# shutdown function
-graceful_shutdown() {
-    local pid=$1
-    local timeout=${2:-30} # timeout in seconds, default is 30 seconds
-
-    if [[ -n $pid ]] && kill -0 "$pid" 2>/dev/null; then
-        echo "Sending SIGTERM to PID $pid"
-        kill "$pid"
-
-        # wait for the process to terminate
-        local count=0
-        while kill -0 "$pid" 2>/dev/null && [ $count -lt $((timeout * 10)) ]; do
-            sleep 0.1
-            ((count++))
-        done
-
-        # if the process is still running after timeout, force kill
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "Process $pid did not terminate gracefully after $timeout seconds, forcing kill"
-            kill -9 "$pid"
-            sleep 0.1
-        fi
-    fi
-}
-
-# Function to handle Ctrl+C and normal termination
-cleanup() {
-    echo "Termination signal received. Cleaning up..."
-
-    # get the latest process list
-    update_process_list
-
-    # Stop recording rosbag
-    echo "Stop rosbag"
-    if [[ -n $PID_ROSBAG ]] && kill -0 "$PID_ROSBAG" 2>/dev/null; then
-        # Try to stop rosbag gracefully first
-        echo "Attempting graceful rosbag shutdown..."
-        kill -TERM "$PID_ROSBAG"
-
-        # Wait for rosbag to finish writing (up to 10 seconds)
-        local count=0
-        while kill -0 "$PID_ROSBAG" 2>/dev/null && [ $count -lt 100 ]; do
-            sleep 0.1
-            ((count++))
-        done
-
-        # If still running, force kill
-        if kill -0 "$PID_ROSBAG" 2>/dev/null; then
-            echo "Rosbag did not terminate gracefully, forcing kill"
-            kill -9 "$PID_ROSBAG"
-            sleep 0.5
-        fi
+        # 3つ目以降の数字は無視
     fi
 
-    # Additional cleanup for any remaining rosbag processes
-    echo "Cleaning up any remaining rosbag processes..."
-    pkill -f "ros2 bag record" 2>/dev/null || true
-    sleep 1
+    # 上記のどれにも当てはまらない引数を保持（このスクリプトでは使わないが将来のため）
+    OTHER_ARGS+=("$arg")
+done
 
-    # shutdown ROS2 nodes
-    echo "Shutting down ROS2 nodes gracefully..."
-    ros2 node list 2>/dev/null | while read -r node; do
-        echo "Shutting down node: $node"
-        ros2 lifecycle set "$node" shutdown 2>/dev/null || true
-        ros2 node kill "$node" 2>/dev/null || true
-    done
-
-    # Stop Autoware
-    echo "Stop Autoware"
-    if [[ -n $PID_AUTOWARE ]] && kill -0 "$PID_AUTOWARE" 2>/dev/null; then
-        graceful_shutdown "$PID_AUTOWARE" 3
-    fi
-
-    # Stop AWSIM
-    echo "Stop AWSIM"
-    if [[ -n $PID_AWSIM ]] && kill -0 "$PID_AWSIM" 2>/dev/null; then
-        graceful_shutdown "$PID_AWSIM" 3
-    fi
-
-    # Compress rosbag
-    echo "Compress rosbag"
-    if [ -d "rosbag2_autoware" ]; then
-        # Wait a bit more to ensure rosbag files are fully written
-        echo "Waiting for rosbag files to be fully written..."
-        sleep 2
-
-        # Check if rosbag directory has content and is not being actively written
-        if [ -f "rosbag2_autoware/metadata.yaml" ] && [ ! -f "rosbag2_autoware/metadata.yaml.tmp" ]; then
-            # Postprocess result
-            echo "Postprocess result"
-            python3 /aichallenge/workspace/src/aichallenge_system/script/motion_analytics.py --input rosbag2_autoware --output .
-            tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
-            rm -rf rosbag2_autoware
-        else
-            echo "Warning: rosbag2_autoware directory appears to be incomplete or still being written"
-            # Try to compress anyway, but with a warning
-            tar -czf rosbag2_autoware.tar.gz rosbag2_autoware 2>/dev/null || echo "Failed to compress rosbag"
-            rm -rf rosbag2_autoware
-        fi
-    else
-        echo "Warning: rosbag2_autoware directory not found"
-    fi
-
-    # check for remaining processes
-    echo "Checking for remaining processes..."
-    if [[ -f $PID_FILE ]]; then
-        while read -r pid; do
-            if kill -0 "$pid" 2>/dev/null; then
-                echo "Attempting graceful shutdown of remaining PID $pid"
-                graceful_shutdown "$pid" 3
-            fi
-        done <"$PID_FILE"
-        rm "$PID_FILE"
-    fi
-
-    echo "Cleanup complete."
-    # Stop ros2 daemon
-    ros2 daemon stop
-    exit 0
-}
-
+# デバッグ表示 (引数解析の結果)
+if [ "$IS_ROSBAG_MODE" -eq 1 ]; then
+    echo "ROS Bag recording mode enabled."
+fi
+if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
+    echo "Screen capture mode enabled."
+fi
+if [ -n "$HOST_UID" ]; then
+    echo "HOST_UID set to: $HOST_UID"
+fi
+if [ -n "$HOST_GID" ]; then
+    echo "HOST_GID set to: $HOST_GID"
+fi
 move_window() {
     echo "Move window"
 
@@ -208,9 +95,6 @@ move_window() {
     sleep 2
 }
 
-# Trap Ctrl+C (SIGINT) and normal termination (EXIT)
-trap cleanup SIGINT SIGTERM EXIT
-
 # Move working directory
 OUTPUT_DIRECTORY=$(date +%Y%m%d-%H%M%S)
 cd /output || exit
@@ -218,6 +102,10 @@ mkdir "$OUTPUT_DIRECTORY"
 ln -nfs "$OUTPUT_DIRECTORY" latest
 cd "$OUTPUT_DIRECTORY" || exit
 
+# shellcheck disable=SC1091
+source /opt/ros/humble/setup.bash
+# shellcheck disable=SC1091
+source /autoware/install/setup.bash
 # shellcheck disable=SC1091
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
@@ -228,71 +116,80 @@ echo "Start AWSIM"
 nohup /aichallenge/run_simulator.bash >/dev/null &
 PID_AWSIM=$!
 echo "AWSIM PID: $PID_AWSIM"
-echo "$PID_AWSIM" >"$PID_FILE"
-# recursively get child processes
-get_child_pids "$PID_AWSIM"
 sleep 3
 
 # Start Autoware with nohup
 echo "Start Autoware"
 nohup /aichallenge/run_autoware.bash awsim >autoware.log 2>&1 &
-PID_AUTOWARE=$!
-echo "Autoware PID: $PID_AUTOWARE"
-echo "$PID_AUTOWARE" >>"$PID_FILE"
-# recursively get child processes
-get_child_pids "$PID_AUTOWARE"
 sleep 3
-
-# run updater
-(
-    while true; do
-        sleep 5
-
-        # update if the main process is still running
-        if [[ -n $PID_AWSIM ]] && kill -0 "$PID_AWSIM" 2>/dev/null; then
-            update_process_list
-        else
-            # if the main process is not running, exit the loop
-            break
-        fi
-    done
-) &
-PID_UPDATER=$!
-echo "$PID_UPDATER" >>"$PID_FILE"
 
 move_window
 bash /aichallenge/publish.bash check
 move_window
 bash /aichallenge/publish.bash all
-bash /aichallenge/publish.bash screen
+# Capture screen
+if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
+    bash /aichallenge/publish.bash screen
+    echo "Screen capture started."
+else
+    echo "Screen capture skipped."
+fi
 
 # Start recording rosbag with nohup
-echo "Start rosbag"
-nohup /aichallenge/record_rosbag.bash >/dev/null 2>&1 &
-PID_ROSBAG=$!
-echo "ROS Bag PID: $PID_ROSBAG"
-echo "$PID_ROSBAG" >>"$PID_FILE"
-# recursively get child processes
-get_child_pids "$PID_ROSBAG"
-# Wait a moment for rosbag to initialize and verify it's running
-sleep 2
-if ! kill -0 "$PID_ROSBAG" 2>/dev/null; then
-    echo "Warning: Rosbag process is not running"
+if [ "$IS_ROSBAG_MODE" -eq 1 ]; then
+    echo "Start rosbag"
+    nohup /aichallenge/record_rosbag.bash >/dev/null 2>&1 &
+    PID_ROSBAG=$!
+    echo "ROS Bag PID: $PID_ROSBAG"
+    # Wait a moment for rosbag to initialize and verify it's running
+    sleep 2
+    if ! kill -0 "$PID_ROSBAG" 2>/dev/null; then
+        echo "Warning: Rosbag process is not running"
+    else
+        echo "Rosbag recording started successfully"
+    fi
 else
-    echo "Rosbag recording started successfully"
+    # ROS Bagモードでない場合、PIDをクリアにしておく
+    PID_ROSBAG=""
+    echo "ROS Bag recording skipped."
 fi
 
 # Wait for AWSIM to finish (this is the main process we're waiting for)
 wait "$PID_AWSIM"
 
 # Stop recording rviz2
-echo "Stop screen capture"
-bash /aichallenge/publish.bash screen
-sleep 3
+if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
+    echo "Stop screen capture"
+    bash /aichallenge/publish.bash screen
+    sleep 3
+fi
 
 # Convert result
 echo "Convert result"
 python3 /aichallenge/workspace/src/aichallenge_system/script/result-converter.py 60 11
 
-# If AWSIM finished naturally, we'll proceed with the rest of the cleanup
-cleanup
+if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
+
+    # このスクリプトがroot (UID 0) で実行されているかチェック
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "Running as root. Changing ownership of artifacts to ${HOST_UID}:${HOST_GID}..."
+
+        # $OUTPUT_DIRECTORY (例: /output/20251107-173000) はカレントディレクトリになっている
+        # /output/XXX を chown する
+        echo "Target directory: $(pwd)"
+        chown -R "${HOST_UID}:${HOST_GID}" "$(pwd)"
+
+        # /output/latest リンク自体の所有者も変更 (-h オプション)
+        # 1つ上の階層 (/output) にある "latest" リンクを変更する
+        chown -h "${HOST_UID}:${HOST_GID}" /output/latest
+
+        echo "Ownership change complete."
+    else
+        # root以外 (おそらく指定されたHOST_UID) で実行されている場合
+        echo "Running as non-root user ($(id -u)). Files should already have correct ownership. Skipping chown."
+    fi
+else
+    # 引数が設定されていなかった場合
+    echo "HOST_UID/HOST_GID not provided as arguments. Skipping ownership change."
+fi
+echo "Evaluation Script finished."
