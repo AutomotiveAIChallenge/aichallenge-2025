@@ -64,4 +64,4 @@ TOPICS=(
     "/vehicle/status/velocity_status"
 )
 
-ros2 bag record "${TOPICS[@]}" -o rosbag2_autoware --compression-format zstd --compression-mode file
+ros2 bag record "${TOPICS[@]}" -o rosbag2_autoware -s mcap --compression-format zstd --compression-mode file
