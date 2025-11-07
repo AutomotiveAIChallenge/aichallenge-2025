@@ -1,31 +1,55 @@
 #!/bin/bash
 
-# Check if rosbag mode is enabled
 IS_ROSBAG_MODE=0
+IS_CAPTURE_MODE=0
+HOST_UID=""
+HOST_GID=""
+RE_NUMBER='^[0-9]+$' # 数字のみにマッチする正規表現
+OTHER_ARGS=()        # rosbag/capture/数字 以外の引数を保持
+
+# "$@" の引数をループ処理
 for arg in "$@"; do
     if [ "$arg" = "rosbag" ]; then
         IS_ROSBAG_MODE=1
-        break
+        continue # 次の引数へ
     fi
+
+    if [ "$arg" = "capture" ]; then
+        IS_CAPTURE_MODE=1
+        continue # 次の引数へ
+    fi
+
+    # 数字のみの引数かチェック
+    if [[ $arg =~ $RE_NUMBER ]]; then
+        if [ -z "$HOST_UID" ]; then
+            # 1つ目の数字をUIDとする
+            HOST_UID=$arg
+            continue
+        elif [ -z "$HOST_GID" ]; then
+            # 2つ目の数字をGIDとする
+            HOST_GID=$arg
+            continue
+        fi
+        # 3つ目以降の数字は無視
+    fi
+
+    # 上記のどれにも当てはまらない引数を保持（このスクリプトでは使わないが将来のため）
+    OTHER_ARGS+=("$arg")
 done
 
+# デバッグ表示 (引数解析の結果)
 if [ "$IS_ROSBAG_MODE" -eq 1 ]; then
     echo "ROS Bag recording mode enabled."
 fi
-
-# Check if capture mode is requested
-IS_CAPTURE_MODE=0
-for arg in "$@"; do
-    if [ "$arg" = "capture" ]; then
-        IS_CAPTURE_MODE=1
-        break
-    fi
-done
-
 if [ "$IS_CAPTURE_MODE" -eq 1 ]; then
     echo "Screen capture mode enabled."
 fi
-
+if [ -n "$HOST_UID" ]; then
+    echo "HOST_UID set to: $HOST_UID"
+fi
+if [ -n "$HOST_GID" ]; then
+    echo "HOST_GID set to: $HOST_GID"
+fi
 move_window() {
     echo "Move window"
 
@@ -144,4 +168,28 @@ fi
 echo "Convert result"
 python3 /aichallenge/workspace/src/aichallenge_system/script/result-converter.py 60 11
 
+if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
+
+    # このスクリプトがroot (UID 0) で実行されているかチェック
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "Running as root. Changing ownership of artifacts to ${HOST_UID}:${HOST_GID}..."
+
+        # $OUTPUT_DIRECTORY (例: /output/20251107-173000) はカレントディレクトリになっている
+        # /output/XXX を chown する
+        echo "Target directory: $(pwd)"
+        chown -R "${HOST_UID}:${HOST_GID}" "$(pwd)"
+
+        # /output/latest リンク自体の所有者も変更 (-h オプション)
+        # 1つ上の階層 (/output) にある "latest" リンクを変更する
+        chown -h "${HOST_UID}:${HOST_GID}" /output/latest
+
+        echo "Ownership change complete."
+    else
+        # root以外 (おそらく指定されたHOST_UID) で実行されている場合
+        echo "Running as non-root user ($(id -u)). Files should already have correct ownership. Skipping chown."
+    fi
+else
+    # 引数が設定されていなかった場合
+    echo "HOST_UID/HOST_GID not provided as arguments. Skipping ownership change."
+fi
 echo "Evaluation Script finished."

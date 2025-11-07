@@ -21,7 +21,7 @@ zenoh:
 	docker compose logs -f zenoh
 
 run-full-kart-system:
-	docker compose up -d driver
+	RUN_MODE=vehicle docker compose up -d driver
 	docker compose up -d autoware
 # 	$(MAKE) rosbag
 	sleep 15
@@ -85,7 +85,7 @@ endif
 run-sim-eval:
 	@echo $(LOG_MSG)
 	@echo "RUN_MODE will be set to: $(RUN_MODE_VAL)"
-	RUN_MODE=$(RUN_MODE_VAL) \
+	RUN_MODE=$(RUN_MODE_VAL) HOST_UID=$(shell id -u) HOST_GID=$(shell id -g) \
 	docker compose up -d sim-eval
 	docker compose logs -f sim-eval
 

@@ -79,7 +79,7 @@ services:
     <<: *autoware-base 
     container_name: "aic-2025-build"
     stop_grace_period: 0.1s
-    command: ["bash", "-c", "echo $HOST_UID1  && cd /aichallenge && exec bash build_autoware.bash ${HOST_UID} ${HOST_GID}"]
+    command: ["bash", "-c", "cd /aichallenge && exec bash build_autoware.bash ${HOST_UID} ${HOST_GID}"]
 
   simulator:
     <<: *autoware-base 
@@ -91,7 +91,7 @@ services:
     <<: *autoware-base 
     container_name: "aic-2025-eval"
     stop_grace_period: 0.1s
-    command: ["bash", "-c", "cd /aichallenge && exec bash run_evaluation.bash ${RUN_MODE}"]
+    command: ["bash", "-c", "cd /aichallenge && exec bash run_evaluation.bash ${RUN_MODE} ${HOST_UID} ${HOST_GID}"]
 
   aw-cmd:
     <<: *autoware-base 
