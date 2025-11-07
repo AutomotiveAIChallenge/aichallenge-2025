@@ -40,7 +40,7 @@ echo "Build successful."
 # --- ファイル所有者の変更 (引数でチェック) ---
 # 引数から HOST_UID と HOST_GID が渡されているかチェック
 if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
-    
+
     # このスクリプトがroot (UID 0) で実行されているかチェック
     if [ "$(id -u)" -eq 0 ]; then
         echo "Running as root. Changing ownership of artifacts to ${HOST_UID}:${HOST_GID}..."
