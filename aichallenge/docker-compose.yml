@@ -13,8 +13,6 @@ x-autoware-base: &autoware-base
     - RUN_MODE=
     - CMD=
   volumes:
-    - /etc/passwd:/etc/passwd:ro
-    - /etc/group:/etc/group:ro
     - ../output:/output
     - ../aichallenge:/aichallenge
     - ../remote:/remote
