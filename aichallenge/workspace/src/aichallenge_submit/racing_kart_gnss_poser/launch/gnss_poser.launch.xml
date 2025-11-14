@@ -14,7 +14,7 @@
   <arg name="map_frame" default="map"/>
 
   <arg name="coordinate_system" default="1" description="0:UTM, 1:MGRS, 2:PLANE, 3:LocalCartesianWGS84, 4:LocalCartesianUTM"/>
-  <arg name="buff_epoch" default="1"/>
+  <arg name="buff_epoch" default="5"/>
   <arg name="use_gnss_ins_orientation" default="false"/>
   <arg name="plane_zone" default="9"/>
   <arg name="gnss_change_threshold" default="0.2"/>

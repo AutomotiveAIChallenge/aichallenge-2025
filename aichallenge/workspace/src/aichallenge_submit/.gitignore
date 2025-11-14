@@ -1,0 +1,20 @@
+# ビルド生成物
+build/
+install/
+log/
+*.pyc
+__pycache__/
+
+# 一時ファイル
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ROSバッグファイル（大きいので除外）
+*.bag
+*.db3
+
+# IDEの設定ファイル
+.vscode/
+.idea/
