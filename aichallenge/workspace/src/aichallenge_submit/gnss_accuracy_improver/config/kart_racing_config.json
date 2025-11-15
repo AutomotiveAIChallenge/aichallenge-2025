@@ -1,0 +1,11 @@
+{
+  "outlier_threshold": 4.5,
+  "min_data_points": 3,
+  "window_size": 6,
+  "process_noise": 0.4,
+  "measurement_noise": 0.8,
+  "raim_threshold": 15.0,
+  "min_satellites": 5,
+  "max_prediction_time": 8.0,
+  "prediction_decay_rate": 0.85
+}
