@@ -3,7 +3,7 @@ sim:
 	@sudo ip link set multicast on lo
 	@sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 	@echo "Start AWSIM"
-	@/aichallenge/simulator/AWSIM/AWSIM.x86_64 --timeout 86400.0 &
+	@/aichallenge/simulator/AWSIM_Multi/AWSIM/AWSIM.x86_64 --timeout 86400.0
 
 aw:
 	@echo "Start Auwoware"

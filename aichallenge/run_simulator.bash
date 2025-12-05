@@ -1,5 +1,5 @@
 #!/bin/bash
-AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM
+AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM_Multi/AWSIM
 
 mode="${1}"
 id="${2:-0}" # デフォルト値0を設定
