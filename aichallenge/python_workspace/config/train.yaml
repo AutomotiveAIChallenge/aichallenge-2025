@@ -1,0 +1,49 @@
+# ------------------------------
+# データセット設定
+# ------------------------------
+data:
+  train_dir: "/path/to/dataset/train"
+  val_dir: "/path/to/dataset/val"
+  sequence_length: 1                   
+  slide_step: 1
+  load_into_memory: false
+  scan_num_points: 1080
+
+# ------------------------------
+# モデル設定
+# ------------------------------
+model:
+  name: "TinyLidarNet"
+  input_dim: 1080
+  output_dim: 2  # [accel, steer]
+
+# ------------------------------
+# 学習設定
+# ------------------------------
+train:
+  batch_size: 32
+  epochs: 100
+  lr: 0.0001
+  num_workers: 16
+
+  # 保存・ログ出力先
+  save_dir: "ckpts/train/${now:%Y-%m-%d}/${now:%H-%M-%S}/"
+  log_dir: "logs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}/"
+
+  # 損失関数重み
+  loss:
+    accel_weight: 0.0
+    steer_weight: 1.0
+
+  # 事前学習モデル
+  pretrained_path: null
+
+  # Early stopping (任意)
+  early_stop_patience: 10
+
+# ------------------------------
+# Hydra実行ディレクトリ設定
+# ------------------------------
+hydra:
+  run:
+    dir: ./outputs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}
