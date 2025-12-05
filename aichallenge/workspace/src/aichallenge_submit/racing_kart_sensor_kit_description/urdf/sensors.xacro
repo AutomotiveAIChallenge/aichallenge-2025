@@ -15,9 +15,9 @@
     yaw="${calibration['base_link']['sensor_kit_base_link']['yaw']}"
   />
 
-  <!-- embedded sensors -->
+  <!-- embedded lidar -->
   <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro"/>
-  <xacro:VLP-16 parent="base_link" name="velodyne" topic="velodyne" hz="10" samples="220" gpu="false">
+  <xacro:VLP-16 parent="base_link" name="lidar" hz="10" samples="220" gpu="false">
     <origin
       xyz="${calibration['base_link']['lidar_link']['x']}
            ${calibration['base_link']['lidar_link']['y']}
