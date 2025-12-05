@@ -4,7 +4,7 @@ AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM_Multi/AWSIM
 mode="${1}"
 id="${2:-0}" # デフォルト値0を設定
 
-if command -v nvidia-smi &>/dev/null && [[ -e /dev/nvidia0 ]]; then
+if [[ -e /dev/nvidia0 ]]; then
     echo "[INFO] NVIDIA GPU detected"
     opts=()
 else
@@ -19,6 +19,10 @@ case "${mode}" in
 *) ;;
 esac
 
+# shellcheck disable=SC1091
+source /opt/ros/humble/setup.bash
+# shellcheck disable=SC1091
+source /autoware/install/setup.bash
 # shellcheck disable=SC1091
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
