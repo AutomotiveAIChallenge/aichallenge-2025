@@ -15,9 +15,11 @@
     yaw="${calibration['base_link']['sensor_kit_base_link']['yaw']}"
   />
 
-  <!-- embedded lidar -->
-  <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro"/>
-  <xacro:VLP-16 parent="base_link" name="lidar" hz="10" samples="220" gpu="false">
+  <!-- lidar -->
+  <xacro:include filename="VLP-16.urdf.xacro"/>
+  <xacro:VLP-16
+    name="lidar"
+    parent="base_link">
     <origin
       xyz="${calibration['base_link']['lidar_link']['x']}
            ${calibration['base_link']['lidar_link']['y']}
@@ -29,20 +31,15 @@
   </xacro:VLP-16>
 
   <!-- camera -->
-  <xacro:include filename="$(find camera_description)/urdf/monocular_camera.xacro"/>
+  <xacro:include filename="monocular_camera.xacro"/>
   <xacro:monocular_camera_macro
-     name="camera"
-     parent="base_link"
-     namespace=""
-     x="${calibration['base_link']['camera_link']['x']}"
-     y="${calibration['base_link']['camera_link']['y']}"
-     z="${calibration['base_link']['camera_link']['z']}"
-     roll="${calibration['base_link']['camera_link']['roll']}"
-     pitch="${calibration['base_link']['camera_link']['pitch']}"
-     yaw="${calibration['base_link']['camera_link']['yaw']}"
-     fps="30"
-     width="800"
-     height="400"
-     fov="1.3"
+    name="camera"
+    parent="base_link"
+    x="${calibration['base_link']['camera_link']['x']}"
+    y="${calibration['base_link']['camera_link']['y']}"
+    z="${calibration['base_link']['camera_link']['z']}"
+    roll="${calibration['base_link']['camera_link']['roll']}"
+    pitch="${calibration['base_link']['camera_link']['pitch']}"
+    yaw="${calibration['base_link']['camera_link']['yaw']}"
   />
 </robot>
