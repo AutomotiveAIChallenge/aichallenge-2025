@@ -22,7 +22,7 @@ loss.accel_weight=0.0 \
 ```
 
 ## 重みの形式変換
-pytorchが使えなく、numpyを用いるため、pthからnpy/npzに重みを変換します。
+採点環境において実行できるように、pytorchではなくnumpyを用います。そのため、`.pth`から`.npy/.npz`に重みを変換します。
 ```bash
 python3 convert_weight.py --model tinylidarnet --ckpt ./ckpts/weight.pth
 ```
