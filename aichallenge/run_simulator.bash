@@ -1,7 +1,8 @@
 #!/bin/bash
-AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM
+AWSIM_DIRECTORY=/aichallenge/simulator/AWSIM_Multi/AWSIM
 
 mode="${1}"
+id="${2:-0}" # デフォルト値0を設定
 
 if [[ -e /dev/nvidia0 ]]; then
     echo "[INFO] NVIDIA GPU detected"
@@ -26,4 +27,9 @@ source /autoware/install/setup.bash
 source /aichallenge/workspace/install/setup.bash
 sudo ip link set multicast on lo
 sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
-$AWSIM_DIRECTORY/AWSIM.x86_64 "${opts[@]}" --timeout 86400.0
+# idが0の場合
+if [ "$id" -eq 0 ]; then
+    export ROS_LOCAL_HOST_ONLY=0
+    export ROS_DOMAIN_ID=$id
+fi
+$AWSIM_DIRECTORY/AWSIM.x86_64 "${opts[@]}"
