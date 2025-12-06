@@ -6,7 +6,7 @@
 
 - TinyLiDARNetについての解説は[こちら](https://automotiveaichallenge.github.io/aichallenge-documentation-2025/ml_sample/algorithms.html#tinylidarnet)を参照してください。
 
-- TinyLiDARNetの実行用コードは、[tiny_lidar_net_controller](TODO: relative link)を参照してください。
+- TinyLiDARNetの実行用コードは、[tiny_lidar_net_controller](../workspace/src/aichallenge_submit/tiny_lidar_net_controller)を参照してください。
 
 ## 学習用データの作成
 以下２つのTopicを含むrosbagを記録した後, extract_data_from_bag.pyを実行します。
