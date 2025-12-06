@@ -151,4 +151,3 @@ def validate(model, loader, device, criterion):
 
 if __name__ == "__main__":
     main()
-
