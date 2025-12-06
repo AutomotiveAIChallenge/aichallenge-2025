@@ -1,5 +1,13 @@
 # Python Workspace
 
+このworkspaceでは、[TinyLidarNet](https://arxiv.org/abs/2410.07447)用のデータ変換・学習・deployコードを提供しています。
+
+- 参考: [TinyLidarNet: 2D LiDAR-based End-to-End Deep Learning Model for F1TENTH Autonomous Racing](https://arxiv.org/abs/2410.07447)
+
+- TinyLiDARNetについての解説は[こちら](https://automotiveaichallenge.github.io/aichallenge-documentation-2025/ml_sample/algorithms.html#tinylidarnet)を参照してください。
+
+- TinyLiDARNetの実行用コードは、[tiny_lidar_net_controller](TODO: relative link)を参照してください。
+
 ## 学習用データの作成
 以下２つのTopicを含むrosbagを記録した後, extract_data_from_bag.pyを実行します。
 sensor_msgs/msg/LaserScan
