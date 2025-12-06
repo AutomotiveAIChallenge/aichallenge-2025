@@ -3,7 +3,7 @@
   <name>laserscan_generator</name>
   <version>0.0.0</version>
   <description>2D Lidar LaserScan Generator</description>
-  <maintainer email="ky.37f.9850@s.thers.ac.jp">Arata Tanaka</maintainer>
+  <maintainer email="tanaka.arata.y5@s.gifu-u.ac.jp">Arata Tanaka</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
