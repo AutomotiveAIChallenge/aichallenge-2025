@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../../")
+
 from pathlib import Path
 import torch
 import torch.optim as optim
