@@ -2,8 +2,6 @@
 
 GoalPosePublisher::GoalPosePublisher() : Node("goal_pose_publisher")
 {
-    const auto rt_qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
-    const auto rv_qos = rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile();
     ekf_trigger_client_ = this->create_client<std_srvs::srv::SetBool>("/localization/trigger_node");
     timer_ = rclcpp::create_timer(
         this, get_clock(), std::chrono::milliseconds(300),
