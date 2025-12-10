@@ -82,55 +82,54 @@ def main(cfg: DictConfig):
     save_dir.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    writer = SummaryWriter(log_dir / timestamp)
-    best_val_loss = float("inf")
-    patience_counter = 0
-    max_patience = cfg.train.get("early_stop_patience", 10)
+    with SummaryWriter(log_dir / timestamp) as writer:
+        best_val_loss = float("inf")
+        patience_counter = 0
+        max_patience = cfg.train.get("early_stop_patience", 10)
 
-    best_path = save_dir / "best_model.pth"
-    last_path = save_dir / "last_model.pth"
+        best_path = save_dir / "best_model.pth"
+        last_path = save_dir / "last_model.pth"
 
-    # === Training Loop ===
-    for epoch in range(cfg.train.epochs):
-        model.train()
-        train_loss = 0.0
+        # === Training Loop ===
+        for epoch in range(cfg.train.epochs):
+            model.train()
+            train_loss = 0.0
 
-        for scans, targets in tqdm(train_loader, desc=f"[Train] Epoch {epoch+1}/{cfg.train.epochs}"):
-            scans = scans.unsqueeze(1).to(device)  # [B, 1, 1080]
-            targets = targets.to(device)           # [B, 2]
+            for scans, targets in tqdm(train_loader, desc=f"[Train] Epoch {epoch+1}/{cfg.train.epochs}"):
+                scans = scans.unsqueeze(1).to(device)
+                targets = targets.to(device)
 
-            scans = clean_numerical_tensor(scans)
-            targets = clean_numerical_tensor(targets)
+                scans = clean_numerical_tensor(scans)
+                targets = clean_numerical_tensor(targets)
 
-            outputs = model(scans)  # -> [B, 2] = [accel, steer]
-            loss = criterion(outputs, targets)
+                outputs = model(scans)
+                loss = criterion(outputs, targets)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item()
 
-        avg_train_loss = train_loss / len(train_loader)
-        avg_val_loss = validate(model, val_loader, device, criterion)
+            avg_train_loss = train_loss / len(train_loader)
+            avg_val_loss = validate(model, val_loader, device, criterion)
 
-        print(f"Epoch {epoch+1:03d}: Train={avg_train_loss:.4f} | Val={avg_val_loss:.4f}")
-        writer.add_scalar("Loss/train", avg_train_loss, epoch + 1)
-        writer.add_scalar("Loss/val", avg_val_loss, epoch + 1)
+            print(f"Epoch {epoch+1:03d}: Train={avg_train_loss:.4f} | Val={avg_val_loss:.4f}")
+            writer.add_scalar("Loss/train", avg_train_loss, epoch + 1)
+            writer.add_scalar("Loss/val", avg_val_loss, epoch + 1)
 
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), best_path)
-            print(f"[SAVE] Best model updated: {best_path} (val_loss={best_val_loss:.4f})")
-            patience_counter = 0
-        else:
-            patience_counter += 1
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                torch.save(model.state_dict(), best_path)
+                print(f"[SAVE] Best model updated: {best_path} (val_loss={best_val_loss:.4f})")
+                patience_counter = 0
+            else:
+                patience_counter += 1
 
-        torch.save(model.state_dict(), last_path)
-        if patience_counter >= max_patience:
-            print(f"[EarlyStop] No improvement for {max_patience} epochs.")
-            break
-
-    writer.close()
+            torch.save(model.state_dict(), last_path)
+            if patience_counter >= max_patience:
+                print(f"[EarlyStop] No improvement for {max_patience} epochs.")
+                break
+    
     print("Training finished.")
 
 
