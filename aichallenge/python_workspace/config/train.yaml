@@ -1,49 +1,32 @@
-# ------------------------------
-# データセット設定
-# ------------------------------
 data:
-  train_dir: "/path/to/dataset/train"
-  val_dir: "/path/to/dataset/val"
-  sequence_length: 1                   
-  slide_step: 1
-  load_into_memory: false
-  scan_num_points: 1080
+  # データセットのディレクトリパス
+  train_dir: "./dataset/train"
+  val_dir: "./dataset/val"
 
-# ------------------------------
-# モデル設定
-# ------------------------------
 model:
+  # "TinyLidarNet" または "TinyLidarNetSmall"
   name: "TinyLidarNet"
+  # LiDARのスキャン点数
   input_dim: 1080
-  output_dim: 2  # [accel, steer]
+  # 出力次元（[accel, steer]）
+  output_dim: 2
 
-# ------------------------------
-# 学習設定
-# ------------------------------
 train:
-  batch_size: 32
+  batch_size: 64
+  num_workers: 4
   epochs: 100
-  lr: 0.0001
-  num_workers: 16
+  lr: 0.001
+  
+  early_stop_patience: 15
 
-  # 保存・ログ出力先
-  save_dir: "ckpts/train/${now:%Y-%m-%d}/${now:%H-%M-%S}/"
-  log_dir: "logs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}/"
-
-  # 損失関数重み
-  loss:
-    accel_weight: 0.0
-    steer_weight: 1.0
-
-  # 事前学習モデル
+  # 事前学習済みモデルのパス（指定しない場合は null）
   pretrained_path: null
 
-  # Early stopping (任意)
-  early_stop_patience: 10
+  # 保存先設定
+  save_dir: "./checkpoints"
+  log_dir: "./logs"
 
-# ------------------------------
-# Hydra実行ディレクトリ設定
-# ------------------------------
-hydra:
-  run:
-    dir: ./outputs/train/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  # 損失関数の重み設定
+  loss:
+    steer_weight: 1.0
+    accel_weight: 1.0
