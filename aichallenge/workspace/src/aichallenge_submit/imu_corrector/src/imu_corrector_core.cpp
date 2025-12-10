@@ -106,8 +106,8 @@ void ImuCorrector::callbackImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_m
   geometry_msgs::msg::TransformStamped::ConstSharedPtr tf_imu2base_ptr =
     transform_listener_->getLatestTransform(imu_msg.header.frame_id, output_frame_);
   if (!tf_imu2base_ptr) {
-    RCLCPP_ERROR_THROTTLE(
-      this->get_logger(), *this->get_clock(), 2000, "Please publish TF %s to %s", output_frame_.c_str(),
+    RCLCPP_WARN_THROTTLE(
+      this->get_logger(), *this->get_clock(), 5000, "Please publish TF %s to %s", output_frame_.c_str(),
     (imu_msg.header.frame_id).c_str());
     return;
   }

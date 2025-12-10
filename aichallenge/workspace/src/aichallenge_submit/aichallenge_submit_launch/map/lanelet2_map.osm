@@ -3483,58 +3483,27 @@
     <tag k="type" v="line_thin"/>
     <tag k="subtype" v="solid"/>
   </way>
-  <way id="9807">
-    <nd ref="9799"/>
-    <nd ref="9800"/>
-    <nd ref="9801"/>
-    <nd ref="9802"/>
-    <nd ref="9803"/>
-    <nd ref="9804"/>
-    <nd ref="9805"/>
-    <nd ref="9806"/>
-    <nd ref="9799"/>
-    <tag k="type" v="parking_space"/>
-    <tag k="subtype" v="solid"/>
-  </way>
-  <way id="9826">
-    <nd ref="9824"/>
-    <nd ref="9825"/>
-    <nd ref="9827"/>
-    <nd ref="9828"/>
-    <nd ref="9829"/>
-    <tag k="type" v="parking_space"/>
-    <tag k="subtype" v="solid"/>
-  </way>
+  <!-- Removed malformed parking_space ways (multi-point polygons without width) -->
   <way id="9832">
     <nd ref="9830"/>
     <nd ref="9831"/>
     <tag k="type" v="parking_space"/>
     <tag k="subtype" v="solid"/>
+    <tag k="width" v="2.5"/>
   </way>
   <way id="9835">
     <nd ref="9833"/>
     <nd ref="9834"/>
     <tag k="type" v="parking_space"/>
     <tag k="subtype" v="solid"/>
+    <tag k="width" v="2.5"/>
   </way>
   <way id="9838">
     <nd ref="9836"/>
     <nd ref="9837"/>
     <tag k="type" v="parking_space"/>
     <tag k="subtype" v="solid"/>
-  </way>
-  <way id="9849">
-    <nd ref="9841"/>
-    <nd ref="9842"/>
-    <nd ref="9843"/>
-    <nd ref="9844"/>
-    <nd ref="9845"/>
-    <nd ref="9846"/>
-    <nd ref="9847"/>
-    <nd ref="9848"/>
-    <nd ref="9841"/>
-    <tag k="type" v="parking_space"/>
-    <tag k="subtype" v="solid"/>
+    <tag k="width" v="2.5"/>
   </way>
   <relation id="14">
     <member type="way" role="left" ref="9165"/>

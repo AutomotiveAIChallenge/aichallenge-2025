@@ -316,9 +316,9 @@ bool GNSSPoser::getTransform(
       tf2_buffer_.lookupTransform(target_frame, source_frame, tf2::TimePointZero);
   } catch (tf2::TransformException & ex) {
     RCLCPP_WARN_STREAM_THROTTLE(
-      this->get_logger(), *this->get_clock(), std::chrono::milliseconds(1000).count(), ex.what());
+      this->get_logger(), *this->get_clock(), std::chrono::milliseconds(5000).count(), ex.what());
     RCLCPP_WARN_STREAM_THROTTLE(
-      this->get_logger(), *this->get_clock(), std::chrono::milliseconds(1000).count(),
+      this->get_logger(), *this->get_clock(), std::chrono::milliseconds(5000).count(),
       "Please publish TF " << target_frame.c_str() << " to " << source_frame.c_str());
 
     transform_stamped_ptr->header.stamp = this->now();

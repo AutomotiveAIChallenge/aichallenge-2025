@@ -135,7 +135,7 @@ void GyroOdometer::callbackVehicleTwist(
 {
   vehicle_twist_arrived_ = true;
   if (!imu_arrived_) {
-    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Imu msg is not subscribed");
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Imu msg is not subscribed");
     vehicle_twist_queue_.clear();
     gyro_queue_.clear();
     return;
@@ -145,7 +145,7 @@ void GyroOdometer::callbackVehicleTwist(
   if (twist_dt > message_timeout_sec_) {
     const std::string error_msg = fmt::format(
       "Twist msg is timeout. twist_dt: {}[sec], tolerance {}[sec]", twist_dt, message_timeout_sec_);
-    RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, error_msg.c_str());
+    RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 5000, error_msg.c_str());
     vehicle_twist_queue_.clear();
     gyro_queue_.clear();
     return;
@@ -158,7 +158,7 @@ void GyroOdometer::callbackVehicleTwist(
   if (imu_dt > message_timeout_sec_) {
     const std::string error_msg = fmt::format(
       "Imu msg is timeout. twist_dt: {}[sec], tolerance {}[sec]", imu_dt, message_timeout_sec_);
-    RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, error_msg.c_str());
+    RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 5000, error_msg.c_str());
     vehicle_twist_queue_.clear();
     gyro_queue_.clear();
     return;
@@ -176,7 +176,7 @@ void GyroOdometer::callbackImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_m
   imu_arrived_ = true;
   if (!vehicle_twist_arrived_) {
     RCLCPP_WARN_THROTTLE(
-      this->get_logger(), *this->get_clock(), 1000, "Twist msg is not subscribed");
+      this->get_logger(), *this->get_clock(), 5000, "Twist msg is not subscribed");
     vehicle_twist_queue_.clear();
     gyro_queue_.clear();
     return;
@@ -196,7 +196,7 @@ void GyroOdometer::callbackImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_m
     transform_listener_->getLatestTransform(imu_msg_ptr->header.frame_id, output_frame_);
   if (!tf_imu2base_ptr) {
     RCLCPP_ERROR_THROTTLE(
-      this->get_logger(), *this->get_clock(), 2000, "Please publish TF %s to %s", output_frame_.c_str(),
+      this->get_logger(), *this->get_clock(), 5000, "Please publish TF %s to %s", output_frame_.c_str(),
       (imu_msg_ptr->header.frame_id).c_str());
     vehicle_twist_queue_.clear();
     gyro_queue_.clear();

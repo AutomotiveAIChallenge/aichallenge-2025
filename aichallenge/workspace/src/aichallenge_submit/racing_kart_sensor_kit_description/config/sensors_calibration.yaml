@@ -6,3 +6,17 @@ base_link:
     roll: 0.0
     pitch: 0.0
     yaw: 0.0
+  camera_link:
+    x: 0.8
+    y: 0.0
+    z: 0.7
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  lidar_link:
+    x: 1.65
+    y: 0.0
+    z: 0.0
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
