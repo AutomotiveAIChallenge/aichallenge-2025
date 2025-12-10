@@ -6,3 +6,4 @@ pyyaml
 omegaconf
 hydra-core
 tensorboard
+jaxtyping
