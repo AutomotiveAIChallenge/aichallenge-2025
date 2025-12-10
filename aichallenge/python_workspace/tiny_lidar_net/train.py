@@ -1,6 +1,3 @@
-import sys
-sys.path.append("../../")
-
 from pathlib import Path
 import torch
 import torch.optim as optim
@@ -11,9 +8,9 @@ from omegaconf import DictConfig, OmegaConf
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 
-from src.model import TinyLidarNet, TinyLidarNetSmall
-from src.data import MultiSeqConcatDataset
-from src.loss import WeightedSmoothL1Loss
+from lib.model import TinyLidarNet, TinyLidarNetSmall
+from lib.data import MultiSeqConcatDataset
+from lib.loss import WeightedSmoothL1Loss
 
 
 

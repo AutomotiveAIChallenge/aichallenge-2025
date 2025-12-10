@@ -5,11 +5,8 @@ import sys
 import numpy as np
 import torch
 
-try:
-    from src.model import TinyLidarNet, TinyLidarNetSmall
-except ImportError:
-    print("Error: Could not import 'src.model'. Please ensure you are in the project root.")
-    sys.exit(1)
+from lib.model import TinyLidarNet, TinyLidarNetSmall
+
 
 
 def save_params_to_npy(model: torch.nn.Module, output_path: Path) -> None:
