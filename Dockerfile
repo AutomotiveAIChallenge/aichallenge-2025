@@ -3,9 +3,10 @@ FROM ghcr.io/automotiveaichallenge/autoware-universe:humble-latest AS common
 
 COPY ./vehicle/zenoh-bridge-ros2dds_1.5.0_amd64.deb /tmp/
 RUN apt install /tmp/zenoh-bridge-ros2dds_1.5.0_amd64.deb
-RUN apt-get update
 COPY packages.txt /tmp/packages.txt
-RUN xargs -a /tmp/packages.txt apt-get install -y --no-install-recommends
+RUN apt-get update \
+    && xargs -a /tmp/packages.txt apt-get install -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
