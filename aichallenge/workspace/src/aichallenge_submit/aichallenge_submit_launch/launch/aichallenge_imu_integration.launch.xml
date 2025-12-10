@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <!-- 従来のセンサー・ローカライゼーション設定 -->
+  <arg name="simulation" default="true"/>
+  <arg name="vehicle_model" default="racing_kart"/>
+  <arg name="sensor_model" default="racing_kart_sensor_kit"/>
+  
+  <!-- マップ設定 -->
+  <arg name="map_path" default="$(find-pkg-share aichallenge_submit_launch)/map"/>
+  <arg name="lanelet2_map_file" default="lanelet2_map.osm"/>
+  
+  <!-- Sensing -->
+  <group>
+    <push-ros-namespace namespace="sensing"/>
+    
+    <!-- 車両速度変換（従来通り） -->
+    <include file="$(find-pkg-share vehicle_velocity_converter)/launch/vehicle_velocity_converter.launch.xml">
+      <arg name="input_vehicle_velocity_topic" value="/vehicle/status/velocity_status"/>
+      <arg name="output_twist_with_covariance" value="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
+      <arg name="config_file" value="$(find-pkg-share aichallenge_submit_launch)/config/vehicle_velocity_converter.param.yaml"/>
+    </include>
+    
+    <!-- IMU処理パイプライン（改良版） -->
+    <group>
+      <push-ros-namespace namespace="imu"/>
+      
+      <!-- ステップ1: 従来のIMU補正（基本的なオフセット補正） -->
+      <include file="$(find-pkg-share imu_corrector)/launch/imu_corrector.launch.xml">
+        <arg name="input_topic" value="imu_raw"/>
+        <arg name="output_topic" value="imu_basic_corrected"/>
+        <arg name="param_file" value="$(find-pkg-share imu_corrector)/config/imu_corrector.param.yaml"/>
+      </include>
+      
+      <!-- ★ ステップ2: 新しい高度フィルタ（ドリフト・振動ノイズ解決） -->
+      <include file="$(find-pkg-share imu_advanced_filter)/launch/imu_advanced_filter.launch.xml">
+        <arg name="input_imu_topic" value="/sensing/imu/imu_basic_corrected"/>
+        <arg name="input_odom_topic" value="/localization/kinematic_state"/>
+        <arg name="output_imu_topic" value="/sensing/imu/imu_data"/>
+        
+        <!-- AIチャレンジ環境向け最適化パラメータ -->
+        <arg name="enable_drift_compensation" value="true"/>
+        <arg name="enable_vibration_filtering" value="true"/>
+        <arg name="drift_compensation_gain" value="0.025"/>
+        <arg name="lowpass_cutoff_frequency" value="12.0"/>
+        <arg name="vibration_detection_threshold" value="0.6"/>
+        <arg name="debug_output" value="false"/>
+      </include>
+      
+    </group>
+    
+    <!-- GNSS処理（従来通り） -->
+    <group>
+      <push-ros-namespace namespace="gnss"/>
+      <include file="$(find-pkg-share racing_kart_gnss_poser)/launch/gnss_poser.launch.xml">
+        <arg name="input_topic_fix" value="nav_sat_fix"/>
+        <arg name="output_topic_gnss_pose" value="pose"/>
+        <arg name="output_topic_gnss_fixed" value="gnss_fixed"/>
+        <arg name="output_topic_gnss_pose_cov" value="pose_with_covariance"/>
+      </include>
+    </group>
+  </group>
+
+  <!-- ローカライゼーション（従来システム + 改良IMU） -->
+  <group>
+    <push-ros-namespace namespace="localization"/>
+    
+    <!-- ジャイロオドメーター（改良IMUデータを使用） -->
+    <include file="$(find-pkg-share gyro_odometer)/launch/gyro_odometer.launch.xml">
+      <arg name="input_vehicle_twist_with_covariance_topic" value="/sensing/vehicle_velocity_converter/twist_with_covariance"/>
+      <arg name="input_imu_topic" value="/sensing/imu/imu_data"/>
+      <arg name="output_twist_with_covariance_topic" value="/localization/twist_estimator/twist_with_covariance"/>
+      <arg name="output_twist_with_covariance_raw_topic" value="/localization/twist_estimator/twist_with_covariance_raw"/>
+    </include>
+
+    <node pkg="imu_gnss_poser" exec="imu_gnss_poser_node" name="imu_gnss_poser" output="screen"/>
+
+    <!-- EKFローカライザー（改良IMUデータの恩恵を受ける） -->
+    <include file="$(find-pkg-share ekf_localizer)/launch/ekf_localizer.launch.xml">
+      <arg name="enable_yaw_bias_estimation" value="true"/>
+      <arg name="tf_rate" value="50.0"/>
+      <arg name="twist_smoothing_steps" value="2"/>
+      <arg name="pose_smoothing_steps" value="2"/>
+    </include>
+  </group>
+
+  <!-- ================================== -->
+  <!-- GNSS精度向上システム (カートレーシング用) -->
+  <!-- ================================== -->
+  <group>
+    <push-ros-namespace namespace="gnss_accuracy_improver"/>
+    
+    <node pkg="gnss_accuracy_improver" 
+          exec="gnss_accuracy_improver_node.py" 
+          name="gnss_improver" 
+          output="screen">
+      
+      <!-- 実際のトピック名に修正 -->
+      <param name="input_topic" value="/gnss/gnss_fixed"/>
+      <param name="output_topic" value="/gnss_accuracy_improver/improved_gnss"/>
+      
+      <!-- カートレーシング最適化パラメータ -->
+      <param name="signal_timeout" value="3.0"/>        <!-- 3秒で信号断検出 -->
+      <param name="statistics_interval" value="5.0"/>   <!-- 5秒間隔で統計出力 -->
+      <param name="kart_mode" value="true"/>            <!-- カート特化モード -->
+      <param name="output_frame" value="base_link"/>     <!-- 出力フレーム -->
+    </node>
+  </group>
+  <!-- GNSS精度向上システム統合完了 -->
+</launch>

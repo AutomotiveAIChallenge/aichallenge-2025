@@ -1,0 +1,25 @@
+# aichallenge環境統合設定
+aichallenge_integration:
+  # 既存システムとの連携
+  existing_packages:
+    gnss_poser: "racing_kart_gnss_poser"
+    imu_gnss_poser: "imu_gnss_poser"
+    sensor_kit: "racing_kart_sensor_kit_description"
+  
+  # トピック設定（既存システムに合わせる）
+  topics:
+    input_gnss: "/racing_kart_gnss_poser/gnss"
+    output_gnss: "/gnss_accuracy_improver/improved_gnss"
+    velocity: "/racing_kart_gnss_poser/velocity"
+    diagnostics: "/gnss_accuracy_improver/diagnostics"
+  
+  # フレーム設定
+  frames:
+    base_frame: "base_link"
+    gnss_frame: "gnss_link"
+    
+  # カート特化設定
+  kart_racing:
+    speed_range_kmh: [29, 35]
+    update_frequency: 20.0
+    realtime_priority: true

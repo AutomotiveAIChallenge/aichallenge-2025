@@ -1,0 +1,14 @@
+<launch>
+  <!-- 既存のセンサーシステム -->
+  <include file="$(find-pkg-share racing_kart_sensor_kit_description)/launch/sensor_kit.launch.xml">
+    <!-- 基本センサー設定 -->
+  </include>
+
+  <!-- 改良版センサーフュージョンシステム -->
+  <include file="$(find-pkg-share racing_sensor_fusion)/launch/racing_sensor_fusion.launch.xml">
+    <!-- 改良版システム -->
+  </include>
+
+  <!-- その他の既存システム -->
+  <!-- 既存のreference.launch.xmlから必要な部分をコピー -->
+</launch>
