@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
-import os
-from glob import glob
+from pathlib import Path
 
 package_name = 'tiny_lidar_net_controller'
 
@@ -9,10 +8,13 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        (os.path.join('share', package_name), ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.xml')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
-        (os.path.join('share', package_name, 'ckpt'), glob('ckpt/*')),
+        (str(Path('share') / package_name), ['package.xml']),
+        (str(Path('share') / package_name / 'launch'), 
+         [str(p) for p in Path('launch').glob('*.launch.xml')]),
+        (str(Path('share') / package_name / 'config'), 
+         [str(p) for p in Path('config').glob('*.yaml')]),
+        (str(Path('share') / package_name / 'ckpt'), 
+         [str(p) for p in Path('ckpt').glob('*')]),
     ],
     install_requires=[
         'setuptools',
