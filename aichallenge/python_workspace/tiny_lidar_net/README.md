@@ -10,8 +10,9 @@
 
 ## 学習用データの作成
 以下２つのTopicを含むrosbagを記録した後, extract_data_from_bag.pyを実行します。
-sensor_msgs/msg/LaserScan
-autoware_auto_control_msgs/msg/AckermannControlCommand
+
+- [`sensor_msgs/msg/LaserScan`](https://github.com/ros2/common_interfaces/blob/humble/sensor_msgs/msg/LaserScan.msg) : 2D LiDAR点群のtopic
+- [`autoware_auto_control_msgs/msg/AckermannControlCommand`](https://github.com/tier4/autoware_auto_msgs/blob/tier4/main/autoware_auto_control_msgs/msg/AckermannControlCommand.idl) : 学習のtarget(教師)となる、アクセルとステアリングの情報を含むtopic
 
 ```bash
 python3 extract_data_from_bag.py --bags-dir /path/to/record/ --outdir ./datasets/
