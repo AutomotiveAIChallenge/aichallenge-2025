@@ -4,7 +4,7 @@ iproute2
 wmctrl
 ros-humble-rqt-tf-tree
 ros-humble-rqt-graph
-ros-humble-rosbag2-storage-mcap
 terminator
 arp-scan
 ros-humble-rosbag2-storage-mcap
+ros-humble-domain-bridge
