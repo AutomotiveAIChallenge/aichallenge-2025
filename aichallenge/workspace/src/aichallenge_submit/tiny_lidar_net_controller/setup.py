@@ -19,7 +19,7 @@ setup(
     ],
     zip_safe=True,
     maintainer='Arata Tanaka',
-    maintainer_email='ky.37f.9850@s.thers.ac.jp',
+    maintainer_email='tanaka.arata.y5@s.gifu-u.ac.jp',
     description='A package for Tiny Lidar Net controller',
     license='Apache-2.0',
     entry_points={
