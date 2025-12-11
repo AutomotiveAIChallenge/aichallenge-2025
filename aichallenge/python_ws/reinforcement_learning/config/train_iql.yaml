@@ -1,5 +1,5 @@
 dataset:
-  path: ./datasets_h5          # merged_sequence.h5 が並ぶルート
+  path: ./datasets          # merged_sequence.h5 が並ぶルート
   downsample_dim: 270
   max_seq: null                # 例: 10 にすれば最初の10シーケンスだけ
 
@@ -24,9 +24,9 @@ algo:
   awbc_clip: 100.0
   target_momentum: 0.995
   target_update_interval: 1
-  # もし行動スケールを [-1,1] に合わせたい場合に使用
   action_scale: 1.0
   action_bias: 0.0
+  init_policy: ./ckpt/bc_lidar270/bc_best.pth
 
 reward:
   # HDF5に /reward が無ければ、以下の簡易報酬で学習します

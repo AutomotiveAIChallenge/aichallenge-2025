@@ -4,6 +4,7 @@ log/
 logs
 datasets/
 benchmarks/
+ckpt/
 ckpts/
 outputs/
 debug/

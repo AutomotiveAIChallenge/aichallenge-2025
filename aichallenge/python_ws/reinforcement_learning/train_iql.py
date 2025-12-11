@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import math
 from pathlib import Path
 import argparse
@@ -16,16 +17,17 @@ from src.model.vnet import VNet
 from src.data.concat_dataset import MultiSequenceDataset
 
 
+# =============================================================
+# Utility
+# =============================================================
+
 def load_config(cfg_path):
     with open(cfg_path, "r") as f:
         return yaml.safe_load(f)
 
 
 def expectile_loss(diff, tau: float):
-    """
-    diff = V(s) - stop_grad(Q_min(s,a))
-    L = |tau - I(diff < 0)| * diff^2
-    """
+    """ L = |tau - I(diff < 0)| * diff^2 """
     w = torch.where(diff < 0, 1.0 - tau, tau)
     return (w * diff.pow(2)).mean()
 
@@ -40,67 +42,41 @@ def build_optimizer(params, lr, wd):
 
 
 def to_device(batch, device):
-    out = {}
-    for k, v in batch.items():
-        if torch.is_tensor(v):
-            out[k] = v.to(device)
-        else:
-            out[k] = v
-    return out
+    return {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in batch.items()}
 
 
 # =============================================================
-# Reward provider（HDF5にrewardが無い場合のフォールバック）
+# Reward Provider
 # =============================================================
 
 class RewardProvider:
     """
-    1) HDF5に /reward がある → それを使う（推奨）
-    2) なければ velocity と control があれば簡易報酬:
-       r = w_v * max(0, vx) - w_s * |steer| - w_a * |accel|
-    3) それもなければゼロ
+    1) HDF5に /reward があればそれを使う
+    2) なければ簡易報酬を合成:
+         r = w_v * max(0, vx) - w_s * |steer| - w_a * |accel|
     """
     def __init__(self, dataset, w_v=1.0, w_s=0.05, w_a=0.01):
         self.dataset = dataset
-        self.w_v = w_v
-        self.w_s = w_s
-        self.w_a = w_a
+        self.w_v, self.w_s, self.w_a = w_v, w_s, w_a
 
-        # dataset 内の各 sequence が reward を持っているかを判定
-        self.has_reward = False
-        try:
-            # MultiSequenceDataset は内部に SequenceDatasets を持つ想定
-            for d in getattr(dataset, "datasets", []):
-                if "reward" in d.h5:
-                    self.has_reward = True
-                    break
-        except Exception:
-            pass
-
-        # velocity/pose の有無（簡易合成で使用）
-        self.can_synthesize = False
-        try:
-            for d in getattr(dataset, "datasets", []):
-                if "velocity" in d.h5 and "control" in d.h5:
-                    self.can_synthesize = True
-                    break
-        except Exception:
-            pass
+        self.has_reward = any("reward" in d.h5 for d in getattr(dataset, "datasets", []))
+        self.can_synthesize = any(
+            ("velocity" in d.h5 and "control" in d.h5)
+            for d in getattr(dataset, "datasets", [])
+        )
 
     def compute(self, batch):
-        if self.has_reward and ("reward" in batch):
+        if self.has_reward and "reward" in batch:
             return batch["reward"].float()
 
-        # synthesize if possible
-        if self.can_synthesize and ("velocity" in batch) and ("action" in batch):
-            vx = batch["velocity"][..., 0]  # (B,)
+        if self.can_synthesize:
+            vx = batch.get("velocity", torch.zeros_like(batch["obs"]))[..., 0]
             steer = batch["action"][..., 0].abs()
             accel = batch["action"][..., 1].abs()
             r = self.w_v * torch.clamp(vx, min=0.0) - self.w_s * steer - self.w_a * accel
             return r.float()
 
-        # fallback
-        return torch.zeros(batch["obs"].shape[0], dtype=torch.float32, device=batch["obs"].device)
+        return torch.zeros(batch["obs"].shape[0], device=batch["obs"].device)
 
 
 # =============================================================
@@ -113,7 +89,7 @@ class IQLTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"🚀 Using device: {self.device}")
 
-        # Dataset（RLなので require_next=True）
+        # ---- Dataset ----
         self.dataset = MultiSequenceDataset(
             root_dir=Path(cfg["dataset"]["path"]),
             downsample_dim=cfg["dataset"]["downsample_dim"],
@@ -134,7 +110,7 @@ class IQLTrainer:
         act_dim = cfg["model"]["action_dim"]
         hidden = cfg["model"]["hidden_dim"]
 
-        # Networks
+        # ---- Networks ----
         self.policy = PolicyNet(obs_dim, hidden_dim=hidden, action_dim=act_dim).to(self.device)
         self.q1 = QNet(obs_dim, action_dim=act_dim, hidden_dim=hidden).to(self.device)
         self.q2 = QNet(obs_dim, action_dim=act_dim, hidden_dim=hidden).to(self.device)
@@ -142,7 +118,7 @@ class IQLTrainer:
         self.value_target = VNet(obs_dim, hidden_dim=hidden).to(self.device)
         self.value_target.load_state_dict(self.value.state_dict())
 
-        # Optims
+        # ---- Optimizers ----
         lr = cfg["train"]["lr"]
         wd = cfg["train"]["weight_decay"]
         self.opt_policy = build_optimizer(self.policy.parameters(), lr, wd)
@@ -150,136 +126,110 @@ class IQLTrainer:
         self.opt_q2 = build_optimizer(self.q2.parameters(), lr, wd)
         self.opt_v = build_optimizer(self.value.parameters(), lr, wd)
 
-        # Hyperparams
-        self.gamma = cfg["algo"]["gamma"]
-        self.tau = cfg["algo"]["expectile_tau"]       # 例: 0.7
-        self.beta = cfg["algo"]["awbc_beta"]          # 例: 0.5
-        self.clip_weight = cfg["algo"]["awbc_clip"]   # 例: 100.0
-        self.target_momentum = cfg["algo"]["target_momentum"]  # 例: 0.995
-        self.target_update_interval = cfg["algo"]["target_update_interval"]
+        # ---- Hyperparams ----
+        algo = cfg["algo"]
+        self.gamma = algo["gamma"]
+        self.tau = algo["expectile_tau"]
+        self.beta = algo["awbc_beta"]
+        self.clip_weight = algo["awbc_clip"]
+        self.target_momentum = algo["target_momentum"]
+        self.target_update_interval = algo["target_update_interval"]
+        self.act_scale = algo.get("action_scale", 1.0)
+        self.act_bias = algo.get("action_bias", 0.0)
 
-        # 行動スケール（必要なら [-1,1] に合わせる）
-        self.act_scale = cfg["algo"].get("action_scale", 1.0)
-        self.act_bias = cfg["algo"].get("action_bias", 0.0)
+        # ---- Optional: BC初期化 ----
+        init_path = algo.get("init_policy", None)
+        if init_path and Path(init_path).exists():
+            self.policy.load_state_dict(torch.load(init_path, map_location=self.device), strict=False)
+            print(f"✅ Loaded pretrained BC policy from: {init_path}")
+        else:
+            print("⚠️ No pretrained BC policy specified or file missing.")
 
-        # Reward provider
-        self.rprovider = RewardProvider(self.dataset,
-                                        w_v=cfg["reward"].get("w_v", 1.0),
-                                        w_s=cfg["reward"].get("w_s", 0.05),
-                                        w_a=cfg["reward"].get("w_a", 0.01))
+        # ---- Reward ----
+        self.rprovider = RewardProvider(
+            self.dataset,
+            w_v=cfg["reward"].get("w_v", 1.0),
+            w_s=cfg["reward"].get("w_s", 0.05),
+            w_a=cfg["reward"].get("w_a", 0.01),
+        )
 
-        # Logging / ckpt
+        # ---- Logging ----
         self.save_dir = Path(cfg["train"]["save_dir"])
         self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.best_metric = float("inf")  # TD誤差などで最小をbestに
+        self.best_metric = float("inf")
 
+    # =============================================================
+    # Helper
+    # =============================================================
     def _update_target(self):
         with torch.no_grad():
             for p, tp in zip(self.value.parameters(), self.value_target.parameters()):
-                tp.data.mul_(self.target_momentum).add_(p.data * (1.0 - self.target_momentum))
+                tp.data.mul_(self.target_momentum).add_(p.data * (1 - self.target_momentum))
 
     def _scale_action(self, a):
-        # a_raw → a_scaled（policy出力と揃える用）
         return (a - self.act_bias) / max(1e-6, self.act_scale)
 
+    # =============================================================
+    # Main training
+    # =============================================================
     def train(self):
         epochs = self.cfg["train"]["epochs"]
-        log_every = self.cfg["train"]["log_interval"]
         save_every = self.cfg["train"]["save_interval"]
 
-        global_step = 0
-        last_ckpt = self.save_dir / "iql_last.pth"
         best_ckpt = self.save_dir / "iql_best.pth"
+        last_ckpt = self.save_dir / "iql_last.pth"
+        global_step = 0
 
         for epoch in range(1, epochs + 1):
-            metrics = {"loss_q": [], "loss_v": [], "loss_pi": [], "adv_mean": []}
+            metrics = {"Q": [], "V": [], "Pi": [], "Adv": []}
 
-            for it, batch in enumerate(tqdm(self.loader, desc=f"[Epoch {epoch}/{epochs}]")):
+            for batch in tqdm(self.loader, desc=f"[Epoch {epoch}/{epochs}]"):
                 batch = to_device(batch, self.device)
+                s, a, s2, d = batch["obs"], batch["action"], batch["next_obs"], batch["done"].float()
+                r = self.rprovider.compute(batch)
 
-                s = batch["obs"]          # (B, N)
-                a = batch["action"]       # (B, 2)
-                s2 = batch["next_obs"]
-                d = batch["done"].float()
-
-                # optional attachments (for reward synth)
-                if "velocity" in batch:
-                    pass  # kept
-                # compute reward
-                r = self.rprovider.compute(batch)  # (B,)
-
-                # =========================
-                # 1) Value update (expectile)
-                # =========================
+                # --- (1) Value update ---
                 with torch.no_grad():
                     q1_sa = self.q1(s, self._scale_action(a))
                     q2_sa = self.q2(s, self._scale_action(a))
-                    q_min = torch.minimum(q1_sa, q2_sa)  # (B,1)
+                    q_min = torch.minimum(q1_sa, q2_sa)
                 v_s = self.value(s)
-                diff = v_s - q_min
-                loss_v = expectile_loss(diff, tau=self.tau)
-
+                loss_v = expectile_loss(v_s - q_min, self.tau)
                 self.opt_v.zero_grad()
                 loss_v.backward()
                 self.opt_v.step()
 
-                # =========================
-                # 2) Critic (Q) update (TD)
-                # =========================
+                # --- (2) Q update ---
                 with torch.no_grad():
-                    v_s2_tgt = self.value_target(s2)  # (B,1)
-                    td_target = r.unsqueeze(1) + self.gamma * (1.0 - d.unsqueeze(1)) * v_s2_tgt
+                    v_next = self.value_target(s2)
+                    td_target = r.unsqueeze(1) + self.gamma * (1 - d.unsqueeze(1)) * v_next
+                q1, q2 = self.q1(s, self._scale_action(a)), self.q2(s, self._scale_action(a))
+                loss_q = huber(q1 - td_target).mean() + huber(q2 - td_target).mean()
+                self.opt_q1.zero_grad(); self.opt_q2.zero_grad()
+                loss_q.backward(); self.opt_q1.step(); self.opt_q2.step()
 
-                q1 = self.q1(s, self._scale_action(a))
-                q2 = self.q2(s, self._scale_action(a))
-                loss_q1 = huber(q1 - td_target).mean()
-                loss_q2 = huber(q2 - td_target).mean()
-                loss_q = loss_q1 + loss_q2
-
-                self.opt_q1.zero_grad()
-                self.opt_q2.zero_grad()
-                loss_q.backward()
-                self.opt_q1.step()
-                self.opt_q2.step()
-
-                # =========================
-                # 3) Policy update (AWBC)
-                # =========================
+                # --- (3) Policy update ---
                 with torch.no_grad():
-                    adv = (torch.minimum(self.q1(s, self._scale_action(a)),
-                                         self.q2(s, self._scale_action(a))) - self.value(s)).squeeze(1)
+                    adv = (torch.minimum(self.q1(s, self._scale_action(a)), self.q2(s, self._scale_action(a))) - self.value(s)).squeeze(1)
                     weights = torch.clamp(torch.exp(adv / max(1e-6, self.beta)), max=self.clip_weight)
+                mu, _ = self.policy(s)
+                a_scaled = torch.clamp(self._scale_action(a), -1, 1)
+                loss_pi = (weights.unsqueeze(1) * nn.functional.smooth_l1_loss(mu, a_scaled, reduction="none")).mean()
+                self.opt_policy.zero_grad(); loss_pi.backward(); self.opt_policy.step()
 
-                mu, _ = self.policy(s)       # policyは [-1,1] 出力を想定
-                a_scaled = torch.clamp(self._scale_action(a), -1.0, 1.0)
-                loss_pi = (weights.unsqueeze(1) * nn.functional.smooth_l1_loss(mu, a_scaled, reduction='none')).mean()
-
-                self.opt_policy.zero_grad()
-                loss_pi.backward()
-                self.opt_policy.step()
-
-                # =========================
-                # 4) Target update
-                # =========================
-                if (global_step % self.target_update_interval) == 0:
+                if global_step % self.target_update_interval == 0:
                     self._update_target()
-
-                # log
-                metrics["loss_q"].append(loss_q.item())
-                metrics["loss_v"].append(loss_v.item())
-                metrics["loss_pi"].append(loss_pi.item())
-                metrics["adv_mean"].append(adv.mean().item())
-
                 global_step += 1
 
-            # ---- epoch end: metrics & ckpt ----
-            avg_q = float(np.mean(metrics["loss_q"]))
-            avg_v = float(np.mean(metrics["loss_v"]))
-            avg_pi = float(np.mean(metrics["loss_pi"]))
-            adv_m = float(np.mean(metrics["adv_mean"]))
-            print(f"Epoch {epoch} | Q:{avg_q:.4f} V:{avg_v:.4f} Pi:{avg_pi:.4f} Adv:{adv_m:.4f}")
+                metrics["Q"].append(loss_q.item())
+                metrics["V"].append(loss_v.item())
+                metrics["Pi"].append(loss_pi.item())
+                metrics["Adv"].append(adv.mean().item())
 
-            # save last
+            # --- epoch summary ---
+            q, v, pi, adv = map(np.mean, [metrics["Q"], metrics["V"], metrics["Pi"], metrics["Adv"]])
+            print(f"Epoch {epoch} | Q:{q:.4f} V:{v:.4f} Pi:{pi:.4f} Adv:{adv:.4f}")
+
             torch.save({
                 "policy": self.policy.state_dict(),
                 "q1": self.q1.state_dict(),
@@ -289,28 +239,16 @@ class IQLTrainer:
                 "cfg": self.cfg,
             }, last_ckpt)
 
-            # define “best” as the smallest critic loss（お好みで指標変更OK）
-            metric_for_best = avg_q
-            if metric_for_best < self.best_metric:
-                self.best_metric = metric_for_best
-                torch.save({
-                    "policy": self.policy.state_dict(),
-                    "q1": self.q1.state_dict(),
-                    "q2": self.q2.state_dict(),
-                    "value": self.value.state_dict(),
-                    "value_target": self.value_target.state_dict(),
-                    "cfg": self.cfg,
-                }, best_ckpt)
-                print(f"⭐ New best checkpoint (critic) saved: {best_ckpt}")
+            if q < self.best_metric:
+                self.best_metric = q
+                torch.save(self.policy.state_dict(), best_ckpt)
+                print(f"⭐ New best checkpoint saved: {best_ckpt}")
 
-            if (epoch % save_every) == 0:
+            if epoch % save_every == 0:
                 torch.save(self.policy.state_dict(), self.save_dir / f"iql_policy_epoch{epoch:03d}.pth")
 
-        # final dumps
         torch.save(self.policy.state_dict(), self.save_dir / "iql_policy_final.pth")
-        print(f"✅ Training completed. Artifacts in: {self.save_dir}")
-
-        # tidy
+        print(f"✅ Training completed. Saved to {self.save_dir}")
         self.dataset.close()
 
 
@@ -319,8 +257,8 @@ class IQLTrainer:
 # =============================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="IQL training for LiDAR-only (1080/540/270)")
-    parser.add_argument("--config", default="./config/train_iql.yaml", type=str, help="Path to YAML config file")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="./config/train_iql.yaml")
     args = parser.parse_args()
 
     cfg = load_config(args.config)

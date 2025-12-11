@@ -3,11 +3,8 @@ from torch.utils.data import Dataset
 from pathlib import Path
 import numpy as np
 import h5py
+import hdf5plugin
 
-
-# ============================================================
-# LiDAR Utility
-# ============================================================
 
 def lidar_preprocess(x: np.ndarray, max_range=30.0, normalize=True):
     """LiDAR距離データを正規化"""
@@ -26,10 +23,6 @@ def lidar_downsample(x: np.ndarray, target_dim: int):
     idx = np.linspace(0, N - 1, target_dim, dtype=np.int32)
     return x[..., idx]
 
-
-# ============================================================
-# Sequence Dataset (1 sequence = 1 h5)
-# ============================================================
 
 class LidarSequenceDataset(Dataset):
     """
