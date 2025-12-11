@@ -20,7 +20,7 @@ setup(
     zip_safe=True,
     maintainer='Your Name',
     maintainer_email='your_email@example.com',
-    description='A package for managing bag files in ROS2',
+    description='A package for E2E controller node ',
     license='Apache-2.0',
     entry_points={
         'console_scripts': [

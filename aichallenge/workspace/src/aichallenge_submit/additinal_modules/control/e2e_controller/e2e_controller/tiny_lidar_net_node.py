@@ -25,7 +25,7 @@ class TinyLidarNetNode(Node):
         self.input_dim = self.get_parameter('model.input_dim').value
         self.output_dim = self.get_parameter('model.output_dim').value
         self.model_architecture = self.get_parameter('model.architecture').value
-        self.weight_path = self.get_parameter('model.weight_path').value
+        self.ckpt_path = self.get_parameter('model.ckpt_path').value
         self.acceleration = self.get_parameter('acceleration').value
         self.control_mode = self.get_parameter('control_mode').value.lower()
 
@@ -36,10 +36,10 @@ class TinyLidarNetNode(Node):
             self.model = TinyLidarNetNp(input_dim=self.input_dim, output_dim=self.output_dim)
 
         # --- 重みロード ---
-        if self.weight_path:
+        if self.ckpt_path:
             try:
-                self.load_weights(self.weight_path)
-                self.get_logger().info(f"Loaded model weights from {self.weight_path}")
+                self.load_weights(self.ckpt_path)
+                self.get_logger().info(f"Loaded model weights from {self.ckpt_path}")
             except Exception as e:
                 self.get_logger().error(f"Failed to load model weights: {e}")
         else:
@@ -63,22 +63,30 @@ class TinyLidarNetNode(Node):
         """NumPyで保存された重みファイル (.npy または .npz) をロード"""
         weights = np.load(path, allow_pickle=True)
         if isinstance(weights, np.lib.npyio.NpzFile):
-            weights = dict(weights.items()) 
+            weights = dict(weights.items())
+        elif isinstance(weights, np.ndarray) and weights.dtype == object:
+            weights = weights.item()   #
+        elif isinstance(weights, dict):
+            pass
+        else:
+            raise ValueError(f"Unsupported weight format type: {type(weights)}")
 
         count = 0
         for k, v in weights.items():
-            # PyTorch名 conv1.weight → conv1_w 形式に合わせる
             k_norm = k.replace('.', '_')
             if k_norm in self.model.params:
                 if self.model.params[k_norm].shape == v.shape:
                     self.model.params[k_norm] = v
                     count += 1
                 else:
-                    self.get_logger().warn(f"Shape mismatch for {k_norm}: expected {self.model.params[k_norm].shape}, got {v.shape}")
+                    self.get_logger().warn(
+                        f"Shape mismatch for {k_norm}: expected {self.model.params[k_norm].shape}, got {v.shape}"
+                    )
             else:
                 self.get_logger().warn(f"Unused weight key: {k_norm}")
 
         self.get_logger().info(f"Loaded {count} parameters from {path}")
+
 
     def scan_callback(self, msg):
         start_time = time.monotonic()
