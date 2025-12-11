@@ -1,6 +1,7 @@
 *details.json
 /log
 *.log
+*.npy*
 *.webm
 *.db3
 rosbag2*/
@@ -8,3 +9,6 @@ rosbag2*/
 *pem
 vehicle/.env
 record/
+outputs/
+logs/
+ckpts/
