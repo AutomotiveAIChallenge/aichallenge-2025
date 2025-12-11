@@ -6,8 +6,8 @@
 # データセット設定
 # ------------------------------
 data:
-  train_dir: "/aichallenge/dataset/train"
-  val_dir: "/aichallenge/dataset/val"
+  train_dir: "/aichallenge/rosbag2_autoware"
+  val_dir: "/aichallenge/rosbag2_autoware"
   sequence_length: 1                   
   slide_step: 1
   load_into_memory: false

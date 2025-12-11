@@ -13,12 +13,60 @@ from src.data import MultiSeqConcatDataset
 from src.loss import WeightedSmoothL1Loss
 
 
+def select_device(preferred: str = 'auto') -> torch.device:
+    """Select computation device with graceful CUDA capability fallback.
+
+    preferred: 'auto' | 'cpu' | 'cuda'. If 'auto', choose CUDA only if available AND supported.
+    Returns torch.device instance.
+    """
+    if preferred not in ('auto', 'cpu', 'cuda'):
+        print(f"[WARN] Unknown device preference '{preferred}', using auto.")
+        preferred = 'auto'
+
+    if preferred == 'cpu':
+        return torch.device('cpu')
+    if preferred == 'cuda':
+        if torch.cuda.is_available():
+            return torch.device('cuda')
+        print('[WARN] CUDA requested but not available; falling back to CPU.')
+        return torch.device('cpu')
+
+    # auto mode
+    if torch.cuda.is_available():
+        cap = torch.cuda.get_device_capability()  # (major, minor)
+        sm_tag = f"sm_{cap[0]}{cap[1]}"
+        supported_sm = {('5', '0'), ('6', '0'), ('7', '0'), ('7', '5'), ('8', '0'), ('8', '6'), ('9', '0')}  # coarse markers
+        # Build currently compiled arch list from torch version string heuristics is non-trivial; we attempt a runtime check instead.
+        try:
+            _probe = torch.empty(1, device='cuda')  # allocate to test kernel availability
+            print(f"[INFO] Using CUDA device (capability {cap[0]}.{cap[1]} -> {sm_tag}).")
+            return torch.device('cuda')
+        except RuntimeError as e:
+            # Typical message: 'no kernel image is available for execution on the device'
+            if 'no kernel image' in str(e):
+                print(f"[WARN] CUDA capability {cap[0]}.{cap[1]} ({sm_tag}) unsupported by this PyTorch build; falling back to CPU.")
+                print('[HINT] Install a newer PyTorch/nightly or build from source with TORCH_CUDA_ARCH_LIST set, e.g. TORCH_CUDA_ARCH_LIST=12.0')
+                return torch.device('cpu')
+            raise  # re-raise unexpected CUDA errors
+    return torch.device('cpu')
+
+
 
 def clean_numerical_tensor(x: torch.Tensor) -> torch.Tensor:
-    """NaN, infを安全に除去"""
-    if torch.isnan(x).any() or torch.isinf(x).any():
-        x = torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
-    return x
+    """NaN, infを安全に除去 (graceful fallback if CUDA kernel unsupported)."""
+    try:
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            x = torch.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
+        return x
+    except RuntimeError as e:
+        if 'no kernel image' in str(e):
+            # Move to CPU and retry
+            print('[WARN] CUDA kernel unsupported for nan/inf ops; moving tensor to CPU and retrying.')
+            x_cpu = x.to('cpu')
+            if torch.isnan(x_cpu).any() or torch.isinf(x_cpu).any():
+                x_cpu = torch.nan_to_num(x_cpu, nan=0.0, posinf=0.0, neginf=0.0)
+            return x_cpu
+        raise
 
 
 @hydra.main(config_path="./config", config_name="train", version_base="1.2")
@@ -27,7 +75,9 @@ def main(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
     print("---------------------------")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Device selection with capability-aware fallback. Allow user override via cfg.train.device (optional).
+    preferred = "cpu"
+    device = select_device(preferred)
     print(f"Using device: {device}")
 
     # === Dataset ===
@@ -101,6 +151,7 @@ def main(cfg: DictConfig):
 
             scans = clean_numerical_tensor(scans)
             targets = clean_numerical_tensor(targets)
+            scans = scans.to(device)
 
             outputs = model(scans)  # -> [B, 2] = [accel, steer]
             loss = criterion(outputs, targets)
