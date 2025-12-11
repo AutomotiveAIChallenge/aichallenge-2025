@@ -51,5 +51,38 @@
       yaw="${calibration['sensor_kit_base_link']['imu_link']['yaw']}"
       fps="100"
     />
+
+    <joint name="camera_joint" type="fixed">
+      <origin rpy="${calibration['sensor_kit_base_link']['camera_link']['roll']} ${calibration['sensor_kit_base_link']['camera_link']['pitch']} ${calibration['sensor_kit_base_link']['camera_link']['yaw']}" 
+              xyz="${calibration['sensor_kit_base_link']['camera_link']['x']} ${calibration['sensor_kit_base_link']['camera_link']['y']} ${calibration['sensor_kit_base_link']['camera_link']['z']}"/>
+      <parent link="sensor_kit_base_link"/>
+      <child link="camera_link"/>
+    </joint>
+    <link name="camera_link">
+      <visual>
+        <geometry>
+          <box size="0.1 0.1 0.1"/>
+        </geometry>
+        <material name="blue">
+          <color rgba="0 0 1 1"/>
+        </material>
+      </visual>
+    </link>
+    <!-- camera_optical_link -->
+    <joint name="camera_optical_joint" type="fixed">
+      <origin rpy="-1.57079632679 0 -1.57079632679" xyz="0 0 0"/>
+      <parent link="camera_link"/>
+      <child link="camera_optical_link"/>
+    </joint>
+    <link name="camera_optical_link">
+      <visual>
+        <geometry>
+          <box size="0.05 0.05 0.01"/>
+        </geometry>
+        <material name="green">
+          <color rgba="0 1 0 0.5"/>
+        </material>
+      </visual>
+    </link>
   </xacro:macro>
 </robot>

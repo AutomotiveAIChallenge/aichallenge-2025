@@ -54,6 +54,12 @@
         <param from="$(find-pkg-share goal_pose_setter)/config/default_goal_pose.param.yaml" />
     </node>
 
+    <!-- Relay camera_info topic for camera image -->
+    <node pkg="topic_tools" exec="relay" name="camera_info_relay">
+        <param name="input_topic" value="/sensing/camera/camera_info"/>
+        <param name="output_topic" value="/sensing/camera/image_raw/camera_info"/>
+    </node>
+
     <!-- Adapters for simulation. -->
     <group if="$(var simulation)">
         <include file="$(find-pkg-share aichallenge_system_launch)/launch/mode/awsim.launch.xml"/>
