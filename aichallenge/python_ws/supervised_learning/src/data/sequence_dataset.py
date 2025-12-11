@@ -5,9 +5,7 @@ from typing import Dict, Any, Optional, Callable, List
 from PIL import Image
 import torch
 
-# ------------------------------------------------------------
-# Utility
-# ------------------------------------------------------------
+
 def _npstruct_to_dict(x: np.void) -> Dict[str, Any]:
     names = x.dtype.names or []
     return {k: x[k].item() if isinstance(x[k], np.ndarray) and x[k].shape == () else x[k] for k in names}
@@ -21,21 +19,13 @@ def _to_tensor_if_numeric(x):
     return x
 
 
-# ------------------------------------------------------------
-# Dataset
-# ------------------------------------------------------------
 class SequenceDataset(Dataset):
-    """
-    単一シーケンスの LiDAR + Camera + Control Command データを管理する Dataset クラス。
-    Transform: ImageTransform / ScanTransform の併用をサポート。
-    """
-
     def __init__(
         self,
         seq_dir: Path,
         keys_to_load: List[str],
-        transform: Optional[Callable] = None,         # ScanTransform など
-        image_transform: Optional[Callable] = None,   # ImageTransform など
+        transform: Optional[Callable] = None,
+        image_transform: Optional[Callable] = None,
         prefer_len_key_order: Optional[List[str]] = None,
     ):
         self.seq_dir = Path(seq_dir)
@@ -46,7 +36,6 @@ class SequenceDataset(Dataset):
         seq_data_dir = self.seq_dir / "sequence_data"
         cam_dir = self.seq_dir / "camera_front"
 
-        # --- NPYキャッシュ ---
         self.arrays: Dict[str, np.ndarray] = {}
         self.key_lengths: Dict[str, int] = {}
 
@@ -57,7 +46,6 @@ class SequenceDataset(Dataset):
                 self.arrays[key] = arr
                 self.key_lengths[key] = len(arr)
 
-        # --- 画像 ---
         self.image_paths: List[Path] = []
         if "image" in self.keys_to_load:
             if cam_dir.exists():
@@ -65,7 +53,6 @@ class SequenceDataset(Dataset):
             elif (self.seq_dir / "images").exists():
                 self.image_paths = sorted((self.seq_dir / "images").glob("*.png"))
 
-        # --- データセット長 ---
         prefer_len_key_order = prefer_len_key_order or ["timestamps", "control_cmd", "scan"]
         length = 0
         for k in prefer_len_key_order:
@@ -82,9 +69,6 @@ class SequenceDataset(Dataset):
     def __len__(self):
         return self.dataset_len
 
-    # --------------------------------------------------------
-    # 各キーのデータ取得
-    # --------------------------------------------------------
     def _get_item_from_key(self, key: str, idx: int):
         arr = self.arrays.get(key)
         if arr is None or idx >= len(arr):
@@ -94,17 +78,14 @@ class SequenceDataset(Dataset):
         if isinstance(item, np.void):
             item = _npstruct_to_dict(item)
 
-        # --- LiDAR scan ---
         if key == "scan" and isinstance(item, dict):
             ranges = item.get("ranges", None)
             if isinstance(ranges, np.ndarray) and ranges.size > 0:
-                # 🔹 NaN / Inf 除去（前処理統一）
                 ranges = np.nan_to_num(ranges, nan=0.0, posinf=30.0, neginf=0.0)
                 return {"ranges": ranges.astype(np.float32)}
             else:
                 return None
 
-        # --- 一般的な dict 構造 ---
         if isinstance(item, dict):
             ret = {}
             for k, v in item.items():
@@ -116,12 +97,8 @@ class SequenceDataset(Dataset):
                     ret[k] = v
             return ret
 
-        # --- 純粋な数値/配列 ---
         return item
 
-    # --------------------------------------------------------
-    # getitem
-    # --------------------------------------------------------
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         if idx < 0:
             idx = self.dataset_len + idx
@@ -130,13 +107,11 @@ class SequenceDataset(Dataset):
 
         data: Dict[str, Any] = {}
 
-        # --- 画像読み込み ---
         if "image" in self.keys_to_load and self.image_paths:
             if idx < len(self.image_paths):
                 img = Image.open(self.image_paths[idx]).convert("RGB")
                 data["image_raw"] = np.asarray(img, dtype=np.uint8)
 
-        # --- 各種 NPYキー ---
         for key in self.keys_to_load:
             if key == "image":
                 continue
@@ -144,7 +119,6 @@ class SequenceDataset(Dataset):
             if val is not None:
                 data[key] = val
 
-        # --- Transform 適用 ---
         if self.image_transform:
             data = self.image_transform(data)
         if self.transform:

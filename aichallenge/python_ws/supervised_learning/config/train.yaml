@@ -23,7 +23,7 @@ transform:
   image:
     resize: [224, 224]
     horizontal_flip: true
-    flip_p: 0.5
+    flip_p: 0.0
     color_jitter: false
     normalize: true
     mean: [0.485, 0.456, 0.406]

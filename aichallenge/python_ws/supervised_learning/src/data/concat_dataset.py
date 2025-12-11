@@ -17,8 +17,8 @@ class MultiSequenceConcatDataset(Dataset):
         self,
         seq_dirs: List[Path],
         keys_to_load: List[str],
-        transform: Optional[Callable] = None,         # ScanTransformなど
-        image_transform: Optional[Callable] = None,   # ImageTransformなど
+        transform: Optional[Callable] = None,
+        image_transform: Optional[Callable] = None,
     ):
         self.datasets: List[SequenceDataset] = []
 
@@ -29,8 +29,8 @@ class MultiSequenceConcatDataset(Dataset):
                 dataset = SequenceDataset(
                     seq_dir=p,
                     keys_to_load=keys_to_load,
-                    transform=transform,              # 🔹 ScanTransformを渡す
-                    image_transform=image_transform,  # 🔹 ImageTransformを渡す
+                    transform=transform,
+                    image_transform=image_transform,
                 )
                 if len(dataset) > 0:
                     self.datasets.append(dataset)
@@ -57,6 +57,4 @@ class MultiSequenceConcatDataset(Dataset):
 
         dataset_idx = bisect.bisect_right(self.cumulative_lengths, idx)
         sample_idx = idx if dataset_idx == 0 else idx - self.cumulative_lengths[dataset_idx - 1]
-
-        # 🔹 各SequenceDatasetで ImageTransform / ScanTransform が自動適用される
         return self.datasets[dataset_idx][sample_idx]

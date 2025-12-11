@@ -12,9 +12,6 @@ from src.data.transform import ImageTransform, ScanTransform
 from src.model.tinylidarnet import TinyLidarNet, TinyLidarNetSmall
 
 
-# ============================================================
-# Utility
-# ============================================================
 def save_checkpoint(model: nn.Module, ckpt_dir: Path, is_best: bool = False):
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     last_path = ckpt_dir / "last.pth"
@@ -24,37 +21,25 @@ def save_checkpoint(model: nn.Module, ckpt_dir: Path, is_best: bool = False):
         torch.save(model.state_dict(), best_path)
 
 
-# ============================================================
-# Training Entry
-# ============================================================
 @hydra.main(version_base="1.2", config_path="config", config_name="train")
 def main(cfg: DictConfig):
-
     print("=== Training Configuration ===")
     print(OmegaConf.to_yaml(cfg))
 
-    # ------------------------------------------------------------
-    # 1. デバイス設定
-    # ------------------------------------------------------------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # ------------------------------------------------------------
-    # 2. Dataset 構築
-    # ------------------------------------------------------------
     root_dir = Path(cfg.dataset.root)
     seq_dirs = [p for p in root_dir.iterdir() if (p / "sequence_data").exists()]
-
     if not seq_dirs:
         raise FileNotFoundError(f"No sequence_data directories found under {root_dir}")
-
     print(f"Found {len(seq_dirs)} sequences")
 
     dataset = MultiSequenceConcatDataset(
         seq_dirs=seq_dirs,
         keys_to_load=["scan", "control_cmd", "image"],
         transform=ScanTransform(max_range=30.0, normalize=True, add_noise=True),
-        image_transform=ImageTransform(resize=(224, 224), horizontal_flip=True, normalize=True)
+        image_transform=ImageTransform(resize=(224, 224), horizontal_flip=True, normalize=True),
     )
 
     dataloader = DataLoader(
@@ -65,9 +50,6 @@ def main(cfg: DictConfig):
         pin_memory=True,
     )
 
-    # ------------------------------------------------------------
-    # 3. モデル構築
-    # ------------------------------------------------------------
     if cfg.model.name == "tinylidarnet":
         model = TinyLidarNet(cfg.model.input_dim, cfg.model.output_dim)
     elif cfg.model.name == "tinylidarnet_small":
@@ -78,9 +60,6 @@ def main(cfg: DictConfig):
     model = model.to(device)
     print(f"Model initialized: {cfg.model.name}")
 
-    # ------------------------------------------------------------
-    # 4. 最適化設定
-    # ------------------------------------------------------------
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=cfg.train.lr,
@@ -88,18 +67,12 @@ def main(cfg: DictConfig):
     )
     criterion = nn.MSELoss()
 
-    # ------------------------------------------------------------
-    # 5. ログ設定
-    # ------------------------------------------------------------
     ckpt_dir = Path(cfg.save.ckpt_dir)
     log_dir = Path(cfg.save.log_dir)
     writer = SummaryWriter(log_dir)
 
     best_loss = float("inf")
 
-    # ============================================================
-    # 6. Training Loop
-    # ============================================================
     print("=== Start Training ===")
     for epoch in range(cfg.train.epochs):
         model.train()
@@ -111,16 +84,14 @@ def main(cfg: DictConfig):
             if scan is None or ctrl is None:
                 continue
 
-            # --- LiDAR スキャン処理（ranges のみ使用）---
             if isinstance(scan, dict) and "ranges" in scan:
-                x = scan["ranges"].to(device).unsqueeze(1).float()  # [B, 1, N]
+                x = scan["ranges"].to(device).unsqueeze(1).float()
             else:
                 print("Invalid scan structure, skipping...")
                 continue
 
-            # --- Control コマンド処理（collate済み辞書対応）---
             if isinstance(ctrl, dict) and "steer" in ctrl and "accel" in ctrl:
-                y = torch.stack([ctrl["steer"], ctrl["accel"]], dim=1).to(device).float()  # [B, 2]
+                y = torch.stack([ctrl["steer"], ctrl["accel"]], dim=1).to(device).float()
             else:
                 print("No valid control commands found in batch, skipping...")
                 continue
@@ -129,11 +100,9 @@ def main(cfg: DictConfig):
             num_nan = torch.isnan(x).sum().item()
             if num_inf > 0 or num_nan > 0:
                 print(f"[WARN] Detected {num_inf} inf and {num_nan} nan values in scan batch.")
-                # 位置確認用: 例として最初の1サンプルを確認
                 bad_idx = torch.where(torch.isinf(x[0]) | torch.isnan(x[0]))[1]
                 print(f"  Example bad indices: {bad_idx[:10].tolist()}")
 
-            # --- Forward + Backward ---
             pred = model(x)
             loss = criterion(pred, y)
 
@@ -146,11 +115,8 @@ def main(cfg: DictConfig):
             if (i + 1) % cfg.train.log_interval == 0:
                 avg_loss = running_loss / cfg.train.log_interval
                 writer.add_scalar("train/loss", avg_loss, epoch * len(dataloader) + i)
-                # print(f"Epoch [{epoch+1}/{cfg.train.epochs}] Step [{i+1}/{len(dataloader)}] "
-                #     f"Loss: {avg_loss:.6f}")
                 running_loss = 0.0
 
-        # --- エポック単位での保存 ---
         avg_epoch_loss = running_loss / max(1, len(dataloader))
         is_best = avg_epoch_loss < best_loss
         if is_best:
