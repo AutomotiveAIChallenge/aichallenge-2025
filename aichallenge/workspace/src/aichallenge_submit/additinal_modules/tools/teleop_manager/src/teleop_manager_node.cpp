@@ -1,4 +1,4 @@
-#include "teleop_manager_node.hpp"
+#include "teleop_manager/teleop_manager_node.hpp"
 
 #include <algorithm>
 #include <string>
@@ -107,10 +107,11 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   last_joy_msg_time_ = this->get_clock()->now();
 
   // 1) Start/stop/AWSIM/Reset buttons (with debounce)
-  bool curr_start = (msg->buttons.size() > start_button_index_
+  bool curr_start = (static_cast<int>(msg->buttons.size()) > start_button_index_
                      && msg->buttons[start_button_index_] == 1);
-  bool curr_stop  = (msg->buttons.size() > stop_button_index_
+  bool curr_stop  = (static_cast<int>(msg->buttons.size()) > stop_button_index_
                      && msg->buttons[stop_button_index_]  == 1);
+  
   if (check_button_press(curr_start, prev_start_pressed_)) {
     std_msgs::msg::Bool b; b.data = true;
     trigger_pub_->publish(b);
@@ -120,7 +121,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     trigger_pub_->publish(b);
   }
 
-  bool curr_awsim_button = (msg->buttons.size() > awsim_button_index_
+  bool curr_awsim_button = (static_cast<int>(msg->buttons.size()) > awsim_button_index_
                             && msg->buttons[awsim_button_index_] == 1);
   if (check_button_press(curr_awsim_button, prev_awsim_button_pressed_)) {
     std_msgs::msg::Bool b; b.data = true;
@@ -128,7 +129,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     RCLCPP_INFO(get_logger(), "Published true to /awsim/control_mode_request_topic");
   }
 
-  bool curr_reset_button = (msg->buttons.size() > reset_button_index_
+  bool curr_reset_button = (static_cast<int>(msg->buttons.size()) > reset_button_index_
                             && msg->buttons[reset_button_index_] == 1);
   if (check_button_press(curr_reset_button, prev_reset_button_pressed_)) {
     auto empty_msg = std::make_unique<std_msgs::msg::Empty>();
@@ -151,10 +152,11 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   }
 
   // 2) Mode selection
-  bool joy_pressed = (msg->buttons.size() > joy_button_index_
+  bool joy_pressed = (static_cast<int>(msg->buttons.size()) > joy_button_index_
                       && msg->buttons[joy_button_index_] == 1);
-  bool ack_pressed = (msg->buttons.size() > ack_button_index_
+  bool ack_pressed = (static_cast<int>(msg->buttons.size()) > ack_button_index_
                       && msg->buttons[ack_button_index_] == 1);
+  
   if (ack_pressed) {
     ack_active_ = true; joy_active_ = false;
   } else if (joy_pressed) {
@@ -165,16 +167,16 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
 
   // 3) Calculate speed/steer in Joy mode (using current scales)
   if (joy_active_) {
-    double raw_speed = (msg->axes.size() > 1 ? msg->axes[1] : 0.0);
-    double raw_steer = (msg->axes.size() > 3 ? msg->axes[3] : 0.0);
+    double raw_speed = (static_cast<int>(msg->axes.size()) > 1 ? msg->axes[1] : 0.0);
+    double raw_steer = (static_cast<int>(msg->axes.size()) > 3 ? msg->axes[3] : 0.0);
     joy_speed_ = raw_speed * speed_scale_;
     joy_steer_ = raw_steer * steer_scale_;
   }
 
   // 4) D-pad for dynamic scale adjustment (with debounce)
   // パラメータ化された軸インデックスを使用
-  double a_lr = (msg->axes.size() > dpad_lr_axis_index_ ? msg->axes[dpad_lr_axis_index_] : 0.0);
-  double a_ud = (msg->axes.size() > dpad_ud_axis_index_ ? msg->axes[dpad_ud_axis_index_] : 0.0);
+  double a_lr = (static_cast<int>(msg->axes.size()) > dpad_lr_axis_index_ ? msg->axes[dpad_lr_axis_index_] : 0.0);
+  double a_ud = (static_cast<int>(msg->axes.size()) > dpad_ud_axis_index_ ? msg->axes[dpad_ud_axis_index_] : 0.0);
 
   // コントローラによって軸の+1/-1が逆の場合があるため、元のロジックを踏襲
   bool steer_scale_inc = std::abs(a_lr + 1.0) < 1e-3;  // 右 (軸値 -1.0)
