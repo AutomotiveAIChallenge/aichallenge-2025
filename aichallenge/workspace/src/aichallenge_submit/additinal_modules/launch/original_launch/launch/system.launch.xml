@@ -3,6 +3,7 @@
     <arg name="simulation" default="true"/>
     <arg name="use_sim_time" default="true"/>
     <arg name="run_rviz" default="true"/>
+    <arg name="record" default="false"/>
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
@@ -56,5 +57,9 @@
     <!-- Adapters for real vehicle. -->
     <group unless="$(var simulation)">
         <include file="$(find-pkg-share aichallenge_system_launch)/launch/mode/real.launch.xml"/>
+    </group>
+
+    <group if="$(var record)">
+        <include file="$(find-pkg-share bag_manager_py)/launch/bag_manager.launch.xml"/>
     </group>
 </launch>
