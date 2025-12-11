@@ -13,7 +13,7 @@ class HDF5SequenceDataset(Dataset):
         self.len_key = len_key
         self.transform = transform
         self._file_handle: Optional[h5py.File] = None
-        self._is_open = False  # ✅ 状態フラグ
+        self._is_open = False
 
         if not self.h5_path.exists():
             raise FileNotFoundError(f"HDF5 file not found at: {self.h5_path}")
@@ -52,15 +52,25 @@ class HDF5SequenceDataset(Dataset):
         try:
             for key in self.valid_keys:
                 item = f[key][idx]
-                data[key] = item
+
+                if isinstance(item, np.void):
+                    # HDF5構造体をdict化
+                    data[key] = {name: item[name] for name in item.dtype.names}
+                elif isinstance(item, (bytes, str)):
+                    data[key] = item
+                else:
+                    data[key] = np.array(item)
+
             if "scan" in self.valid_keys:
                 data["scan_attrs"] = dict(f["scan"].attrs)
+
         except Exception as e:
             print(f"Error reading index {idx} from {self.h5_path}: {e}")
             return {}
 
         if self.transform:
             data = self.transform(data)
+
         return data
 
     def close(self):
@@ -71,10 +81,9 @@ class HDF5SequenceDataset(Dataset):
             except Exception:
                 pass
         self._file_handle = None
-        self._is_open = False  # ✅ 状態をリセット
+        self._is_open = False 
 
     def __del__(self):
-        # ✅ try/exceptのみ（外部モジュール非依存）
         try:
             self.close()
         except Exception:
