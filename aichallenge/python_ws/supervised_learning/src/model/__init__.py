@@ -1,4 +1,4 @@
-from src.model.numpy.layers import (
+from .numpy.layers import (
     relu,       # NumPy版 (高速だった)
     tanh,       # NumPy版 (高速だった)
     sigmoid,  
@@ -10,7 +10,12 @@ from src.model.numpy.layers import (
     max_pool2d, 
 )
 
-from src.model.numba.layers import (
+from .numba.layers import (
     sigmoid,    # Numba版 (高速だった )
     max_pool2d  # Numba版 (高速だった )
+)
+
+from .numpy.initializers import (
+    kaiming_normal_init,
+    zeros_init,
 )
