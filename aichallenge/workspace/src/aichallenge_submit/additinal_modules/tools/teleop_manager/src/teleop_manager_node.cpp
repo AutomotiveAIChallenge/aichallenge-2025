@@ -41,13 +41,13 @@ TeleopManagerNode::TeleopManagerNode()
   declare_parameter<int>("dpad_ud_axis_index", 7); 
 
   declare_parameter<std::string>("reset_frame_id", "map");
-  declare_parameter<double>("reset_pos_x", 89653.7);
-  declare_parameter<double>("reset_pos_y", 43122.5);
+  declare_parameter<double>("reset_pos_x", 89666.0);
+  declare_parameter<double>("reset_pos_y", 43124.0);
   declare_parameter<double>("reset_pos_z", 0.0);
   declare_parameter<double>("reset_ori_x", 0.0);
   declare_parameter<double>("reset_ori_y", 0.0);
-  declare_parameter<double>("reset_ori_z", -0.971732);
-  declare_parameter<double>("reset_ori_w", 0.236088);
+  declare_parameter<double>("reset_ori_z", -0.968393);
+  declare_parameter<double>("reset_ori_w", 0.249429);
 
   get_parameter("speed_scale", speed_scale_);
   get_parameter("steer_scale", steer_scale_);
@@ -153,7 +153,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     RCLCPP_INFO(get_logger(), "Published Empty message to /aichallenge/awsim/reset");
     auto pose_msg = std::make_unique<geometry_msgs::msg::PoseWithCovarianceStamped>(reset_pose_msg_);
   
-    pose_msg->header.stamp = this->get_clock()->now();
+    // pose_msg->header.stamp = this->get_clock()->now();
     initialpose_publisher_->publish(std::move(pose_msg));
     RCLCPP_INFO(get_logger(), "Published initial pose to /initialpose");
   }

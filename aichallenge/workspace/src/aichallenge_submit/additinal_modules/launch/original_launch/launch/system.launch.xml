@@ -9,7 +9,7 @@
 
     <!-- E2E関連のパラメータ -->
     <arg name="e2e" default="false"/>
-    <arg name="ckpt_path" default="$(find-pkg-share e2e_controller)/ckpt/tiny_lidar_net_weights.npz"/>
+    <arg name="ckpt_path" default="$(find-pkg-share e2e_controller)/ckpt/tinylidarnet_weights.npy"/>
     <arg name="model_type" default="tiny_lidar_net"/>
 
     <arg name="csv_path" default="$(find-pkg-share original_launch)/map/lane.csv"/>
