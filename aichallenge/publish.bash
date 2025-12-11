@@ -35,6 +35,12 @@ request_control() {
 }
 
 # Function to set initial pose
+# pit lane position
+#           position: {
+#             x: 89666.01577151686,
+#             y: 43124.3307874416,
+#             z: 0.0
+#           },
 set_initial_pose() {
     echo "Setting initial pose..."
     timeout 20s bash -c '
@@ -45,15 +51,15 @@ set_initial_pose() {
       pose: {
         pose: {
           position: {
-            x: 89666.01577151686,
-            y: 43124.3307874416,
+            x: 89634.00,
+            y: 43129.00,
             z: 0.0
           },
           orientation: {
             x: 0.0,
             y: 0.0,
-            z: -0.9683930510846941,
-            w: 0.24942914547196962
+            z: 0.8000,
+            w: 0.4000
           }
         }
       }
