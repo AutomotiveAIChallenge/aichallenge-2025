@@ -21,9 +21,9 @@
     dpad_ud_axis_index:   7   # 上下 (axes[7])
 
     reset_frame_id: "map"
-    reset_pos_x: 89665.98707570114
-    reset_pos_y: 43124.828494282236
-    reset_pos_z: 6.381048054097747
+    reset_pos_x: 89666.01577151686
+    reset_pos_y: 43124.3307874416
+    reset_pos_z: 0.0
     reset_ori_x: 0.0
     reset_ori_y: 0.0
     reset_ori_z: -0.9683930510846941
