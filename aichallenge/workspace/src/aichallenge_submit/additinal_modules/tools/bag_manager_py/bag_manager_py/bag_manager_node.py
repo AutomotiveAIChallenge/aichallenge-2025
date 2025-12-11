@@ -70,8 +70,6 @@ class RosBagManagerNode(Node):
         response.message = message
         return response
 
-    # --- トピックコールバック (Joyトリガー用) ---
-
     def trigger_callback(self, msg: Bool):
         """録画トリガートピック コールバック"""
         if msg.data:
@@ -84,8 +82,6 @@ class RosBagManagerNode(Node):
             success, message = self._stop_recording_logic()
             if not success:
                 self.get_logger().warn(f"トリガーによる録画停止失敗: {message}")
-
-    # --- 内部ロジック (共通化) ---
 
     def _start_recording_logic(self):
         """録画開始の共通ロジック (排他制御あり)"""
@@ -127,32 +123,73 @@ class RosBagManagerNode(Node):
                 self.get_logger().warn("録画は現在行われていません。停止要求は無視されます。")
                 return False, "Not recording"
 
-            # === 録画停止処理 ===
-            self.get_logger().info("録画停止要求 — SIGINT を送信します")
-            self._cleanup() 
+            # === 録画停止処理 (サービス/トピック用) ===
+            self.get_logger().info("録画停止要求 (Service/Topic) — プロセス終了を待ちます")
+            self._robust_stop_and_wait() 
             
             return True, "Recording stopped"
 
-    def _cleanup(self):
-        """録画プロセスが生きていたら SIGINT で停止し、wait する"""
-        if self.recording_process:
+    def _robust_stop_and_wait(self):
+        """録画プロセスを停止し、終了を待つ (Service/Topic用)"""
+        if self.recording_process and self.recording_process.poll() is None:
+            pgid = os.getpgid(self.recording_process.pid)
+            self.get_logger().info(f"録画プロセス (PGID: {pgid}) に SIGINT を送信します。")
             try:
-                os.killpg(os.getpgid(self.recording_process.pid), signal.SIGINT)
-                self.recording_process.wait(timeout=5)
+                os.killpg(pgid, signal.SIGINT)
+                # タイムアウトを10秒に延長 (bag が大きい場合を考慮)
+                self.recording_process.wait(timeout=10.0) 
+                self.get_logger().info("録画プロセスは正常に終了しました。")
+            
+            except subprocess.TimeoutExpired:
+                self.get_logger().warn(f"録画プロセス (PGID: {pgid}) が SIGINT 後 10秒で終了しませんでした。SIGTERM を送信します。")
+                try:
+                    os.killpg(pgid, signal.SIGTERM)
+                    self.recording_process.wait(timeout=5.0) # SIGTERM 後は 5 秒待つ
+                    self.get_logger().info("録画プロセスは SIGTERM により終了しました。")
+                except subprocess.TimeoutExpired:
+                    self.get_logger().error(f"録画プロセス (PGID: {pgid}) が SIGTERM 後 5秒で終了しませんでした。SIGKILL を送信します。")
+                    os.killpg(pgid, signal.SIGKILL)
+                    self.recording_process.wait()
+                    self.get_logger().info("録画プロセスは SIGKILL により終了しました。")
+                except Exception as e:
+                    self.get_logger().error(f"SIGTERM/wait 中に予期せぬエラー: {e}")
             except Exception as e:
-                self.get_logger().error(f"録画プロセス停止中にエラー: {e}")
+                # (例: プロセスがすでに終了していた場合など)
+                self.get_logger().warn(f"SIGINT/wait 中にエラー: {e}")
+            
             finally:
+                # この関数が呼ばれた時点で、プロセスは終了(またはKILL)されているはず
                 self.recording_process = None
                 self.is_recording = False
-                
                 self.status_pub.publish(Bool(data=False))
-                self.get_logger().info("録画を停止しました")
+                self.get_logger().info("録画停止処理 (wait) 完了")
+        else:
+            # プロセスが存在しないか、すでに終了している
+            self.get_logger().info("録画はすでに停止していました。")
+            self.recording_process = None
+            self.is_recording = False
+            self.status_pub.publish(Bool(data=False))
 
     def destroy_node(self):
         self.get_logger().info("ノードシャットダウン: 録画プロセス停止処理を実行します")
         with self.lock: 
-            if self.is_recording:
-                self._cleanup()
+            if self.is_recording and self.recording_process and self.recording_process.poll() is None:
+                # プロセスがまだ動いている場合
+                self.get_logger().info("録画プロセスに SIGINT を送信します (wait しません)")
+                try:
+                    pgid = os.getpgid(self.recording_process.pid)
+                    os.killpg(pgid, signal.SIGINT)
+                except Exception as e:
+                    self.get_logger().error(f"シャットダウン中の SIGINT 送信に失敗: {e}")
+                
+                self.is_recording = False
+                self.recording_process = None
+            
+            elif self.is_recording:
+                # is_recording=True なのにプロセスが存在しない場合
+                self.get_logger().warn("録画中フラグが立っていましたが、プロセス実体が存在しませんでした。")
+                self.is_recording = False
+
         super().destroy_node()
 
 
@@ -160,23 +197,20 @@ def main(args=None):
     rclpy.init(args=args)
     node = RosBagManagerNode()
     
-    def _signal_handler(signum, frame):
-        node.get_logger().info(f"シグナル {signal.Signals(signum).name} 受信 — シャットダウンします")
-        if rclpy.ok():
-            node.destroy_node()
-        rclpy.shutdown()
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        signal.signal(sig, _signal_handler)
-
     try:
+        # spin() は Ctrl+C を受け取ると KeyboardInterrupt を発生させる
         rclpy.spin(node)
+    except KeyboardInterrupt:
+        node.get_logger().info("KeyboardInterrupt (SIGINT) 受信 — シャットダウンします")
     except Exception as e:
         node.get_logger().error(f"rclpy.spin() 中に予期せぬエラー: {e}")
     finally:
+        # rclpy.spin() が終了した (Ctrl+C or other error)
         if rclpy.ok():
-            node.destroy_node()
+            node.get_logger().info("Spin 終了。ノードを破棄します。")
+            node.destroy_node() 
             rclpy.shutdown()
+        node.get_logger().info("シャットダウン完了")
 
 
 if __name__ == '__main__':
