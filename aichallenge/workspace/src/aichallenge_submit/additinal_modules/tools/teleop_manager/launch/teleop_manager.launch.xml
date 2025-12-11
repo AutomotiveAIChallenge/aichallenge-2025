@@ -2,7 +2,7 @@
 
   <arg name="teleop_param"  default="$(find-pkg-share teleop_manager)/config/teleop.param.yaml"/>
   <arg name="self_control_topic" default="/ackermann_cmd"/>
-  <arg name="vehicle_control_topic" default="/awsim/raw_control_cmd"/>
+  <arg name="vehicle_control_topic" default="/awsim/control_cmd"/>
   <arg name="trigger_topic" default="/rosbag2_recorder/trigger"/>
 
   
