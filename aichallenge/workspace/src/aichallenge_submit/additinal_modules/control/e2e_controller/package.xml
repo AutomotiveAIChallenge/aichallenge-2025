@@ -6,8 +6,10 @@
   <maintainer email="your_email@example.com">Your Name</maintainer>
   <license>Apache-2.0</license>
   
- <depend>rclpy</depend>
-  <exec_depend>std_msgs</exec_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>autoware_auto_control_msgs</depend>
 
   <export>
     <build_type>ament_python</build_type>
