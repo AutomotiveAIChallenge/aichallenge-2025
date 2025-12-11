@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>e2e_controller</name>
+  <name>bag_manager_py</name>
   <version>0.1.0</version>
   <description>E2E controller node</description>
   <maintainer email="your_email@example.com">Your Name</maintainer>
