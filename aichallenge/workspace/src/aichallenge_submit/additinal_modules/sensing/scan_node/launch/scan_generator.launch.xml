@@ -1,0 +1,24 @@
+<launch>
+
+  <arg name="scan_param"  default="$(find-pkg-share scan_generator)/config/scan_generator_node.param.yaml"/>
+  <arg name="csv_path" default="$(find-pkg-share scan_generator)/map/lane.csv"/>
+
+  <arg name="use_sim_time" default="true"/>
+  <arg name="pose_topic" default="/localization/pose_with_covariance"/>
+  <arg name="scan_topic" default="/scan"/>
+  
+  <!-- joy manager node-->
+  <node pkg="scan_generator"
+        exec="scan_generator_node"
+        name="scan_generator_node"
+        output="screen">
+
+    <param from="$(var scan_param)"/>
+    <param name="csv_path" value="$(var csv_path)"/>
+
+    <remap from="/localization/pose_with_covariance" to="$(var pose_topic)"/>
+    <remap from="/scan" to="$(var scan_topic)"/>
+    
+  </node>
+
+</launch>
