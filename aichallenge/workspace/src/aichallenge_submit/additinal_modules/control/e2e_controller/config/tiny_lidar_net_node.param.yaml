@@ -8,5 +8,5 @@
       architecture: "small"      # "normal" または "small"
       ckpt_path: "/path/to/tinylidarnet_weights.npy"
     
-    control_mode: "ai"          # "ai" または "fixed"
+    control_mode: "fixed"          # "ai" または "fixed"
     acceleration: 1.0            # 固定加速度コマンド mode:fixed の場合に使用

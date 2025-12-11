@@ -22,9 +22,12 @@ ros2 launch original_launch system.launch.xml record:=true
 ## 学習プロセス
 
 ### 1. Rosbagから学習用にデータを抽出
-[extract_data_from_bag.yaml](aichallenge/python_ws/supervised_learning/config/extract_data_from_bag.yaml)で抽出したいTopicや抽出したいラップ番号の指定が可能。
+[preprocess.yaml](aichallenge/python_ws/supervised_learning/config/preprocess.yaml)で抽出したいTopicや抽出したいラップ番号の指定が可能。
 ```bash
-python3 extract_data_from_bag.py --output_dir ./datasets/ --search_dir /path/to/record/sequence/
+python3 extract.py   /aichallenge/record/  ./datasets/extracted
+
+python3 preprocess.py ./datasets/extracted ./datasets/preprocessed/
+
 ```
 
 ### 2. 学習
@@ -34,5 +37,7 @@ python3 extract_data_from_bag.py --output_dir ./datasets/ --search_dir /path/to/
 python3 train.py
 
 ## もし、hydraでパラメータを書き換えたいとき
-python3 train.py data.root=./datasets/sequence
+## train valとも同じデータセットを利用(別で用意するのが良い)
+python3 train.py  data.train_dir=/aichallenge/python_ws/supervised_learning/datasets/ preprocessed/ \
+data.val_dir: /aichallenge/python_ws/supervised_learning/datasets/preprocessed/
 ```

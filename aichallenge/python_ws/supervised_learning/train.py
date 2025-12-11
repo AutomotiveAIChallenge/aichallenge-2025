@@ -1,134 +1,146 @@
+import os
 import torch
-import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from pathlib import Path
 from tqdm import tqdm
 import hydra
 from omegaconf import DictConfig, OmegaConf
+from torch.utils.tensorboard import SummaryWriter
 
-from src.data.concat_dataset import MultiSequenceConcatDataset
-from src.data.transform import ImageTransform, ScanTransform
-from src.model.tinylidarnet import TinyLidarNet, TinyLidarNetSmall
+from src.model import TinyLidarNet, TinyLidarNetSmall
+from src.data import MultiFileConcatDataset
+from src.loss import WeightedSmoothL1Loss
 
-
-def save_checkpoint(model: nn.Module, ckpt_dir: Path, is_best: bool = False):
-    ckpt_dir.mkdir(parents=True, exist_ok=True)
-    last_path = ckpt_dir / "last.pth"
-    best_path = ckpt_dir / "best.pth"
-    torch.save(model.state_dict(), last_path)
-    if is_best:
-        torch.save(model.state_dict(), best_path)
-
-
-@hydra.main(version_base="1.2", config_path="config", config_name="train")
+@hydra.main(config_path="./config", config_name="train", version_base='1.2')
 def main(cfg: DictConfig):
-    print("=== Training Configuration ===")
+    OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
+    print("------ Configuration ------")
     print(OmegaConf.to_yaml(cfg))
+    print("---------------------------")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    root_dir = Path(cfg.dataset.root)
-    seq_dirs = [p for p in root_dir.iterdir() if (p / "sequence_data").exists()]
-    if not seq_dirs:
-        raise FileNotFoundError(f"No sequence_data directories found under {root_dir}")
-    print(f"Found {len(seq_dirs)} sequences")
+    
+    train_dataset = MultiFileConcatDataset(
+        data_dir=cfg.data.train_dir,
+        sequence_length=cfg.data.sequence_length,
+        slide_step=cfg.data.slide_step,
+        load_into_memory=cfg.data.load_into_memory,
+        scan_num_points=cfg.data.scan_num_points
+    )
+    val_dataset = MultiFileConcatDataset(
+        data_dir=cfg.data.val_dir,
+        sequence_length=cfg.data.sequence_length,
+        slide_step=cfg.data.slide_step,
+        load_into_memory=cfg.data.load_into_memory,
+        scan_num_points=cfg.data.scan_num_points
+    )
+    
+    train_loader = DataLoader(train_dataset,
+                              batch_size=cfg.train.batch_size,
+                              shuffle=True,
+                              num_workers=cfg.train.num_workers,
+                              pin_memory=True)
+    val_loader = DataLoader(val_dataset,
+                            batch_size=cfg.train.batch_size,
+                            shuffle=False,
+                            num_workers=cfg.train.num_workers,
+                            pin_memory=True)
+    
+    if cfg.model.name == "TinyLidarNetSmall":
+        model = TinyLidarNetSmall(input_dim=cfg.model.input_dim,
+                                  output_dim=cfg.model.output_dim).to(device)
+    elif cfg.model.name == "TinyLidarNet":
+        model = TinyLidarNet(input_dim=cfg.model.input_dim,
+                                    output_dim=cfg.model.output_dim).to(device)
 
-    dataset = MultiSequenceConcatDataset(
-        seq_dirs=seq_dirs,
-        keys_to_load=["scan", "control_cmd", "image"],
-        transform=ScanTransform(max_range=30.0, normalize=True, add_noise=True),
-        image_transform=ImageTransform(resize=(224, 224), horizontal_flip=True, normalize=True),
+    if cfg.train.pretrained_path is not None:
+        model.load_state_dict(torch.load(cfg.train.pretrained_path))
+        
+    criterion = WeightedSmoothL1Loss(
+        accel_weight=cfg.train.loss.accel_weight,
+        steer_weight=cfg.train.loss.steer_weight
     )
 
-    dataloader = DataLoader(
-        dataset,
-        batch_size=cfg.dataset.batch_size,
-        shuffle=cfg.dataset.shuffle,
-        num_workers=cfg.dataset.num_workers,
-        pin_memory=True,
-    )
+    criterion_val = WeightedSmoothL1Loss(accel_weight=0.0, steer_weight=1.0)
 
-    if cfg.model.name == "tinylidarnet":
-        model = TinyLidarNet(cfg.model.input_dim, cfg.model.output_dim)
-    elif cfg.model.name == "tinylidarnet_small":
-        model = TinyLidarNetSmall(cfg.model.input_dim, cfg.model.output_dim)
-    else:
-        raise ValueError(f"Unknown model name: {cfg.model.name}")
+    optimizer = optim.Adam(model.parameters(), lr=cfg.train.lr)
 
-    model = model.to(device)
-    print(f"Model initialized: {cfg.model.name}")
+    save_dir = cfg.train.save_dir
+    os.makedirs(save_dir, exist_ok=True)
+    
+    log_dir = cfg.train.log_dir
+    writer = SummaryWriter(log_dir=log_dir)
 
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=cfg.train.lr,
-        weight_decay=cfg.train.weight_decay,
-    )
-    criterion = nn.MSELoss()
+    best_model_save_path = os.path.join(save_dir, 'best.pth')
+    last_model_save_path = os.path.join(save_dir, 'last.pth')
+    best_val_loss = float('inf')
 
-    ckpt_dir = Path(cfg.save.ckpt_dir)
-    log_dir = Path(cfg.save.log_dir)
-    writer = SummaryWriter(log_dir)
-
-    best_loss = float("inf")
-
-    print("=== Start Training ===")
+    # ===== 学習ループ =====
     for epoch in range(cfg.train.epochs):
         model.train()
-        running_loss = 0.0
+        train_loss = 0
 
-        for i, batch in enumerate(tqdm(dataloader, desc=f"[Epoch {epoch+1}/{cfg.train.epochs}]")):
-            scan = batch.get("scan", None)
-            ctrl = batch.get("control_cmd", None)
-            if scan is None or ctrl is None:
-                continue
+        for data_dict in tqdm(train_loader, desc=f"Epoch {epoch+1}/{cfg.train.epochs} [Train]"):
+            
+            scans = data_dict['scan'].to(device) # -> [64, 1, 1080]
+        
+            targets = data_dict['control_cmd'].to(device) 
 
-            if isinstance(scan, dict) and "ranges" in scan:
-                x = scan["ranges"].to(device).unsqueeze(1).float()
-            else:
-                print("Invalid scan structure, skipping...")
-                continue
-
-            if isinstance(ctrl, dict) and "steer" in ctrl and "accel" in ctrl:
-                y = torch.stack([ctrl["steer"], ctrl["accel"]], dim=1).to(device).float()
-            else:
-                print("No valid control commands found in batch, skipping...")
-                continue
-
-            num_inf = torch.isinf(x).sum().item()
-            num_nan = torch.isnan(x).sum().item()
-            if num_inf > 0 or num_nan > 0:
-                print(f"[WARN] Detected {num_inf} inf and {num_nan} nan values in scan batch.")
-                bad_idx = torch.where(torch.isinf(x[0]) | torch.isnan(x[0]))[1]
-                print(f"  Example bad indices: {bad_idx[:10].tolist()}")
-
-            pred = model(x)
-            loss = criterion(pred, y)
-
+            if torch.isnan(scans).any():
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print("!!  異常値 (NaN) を入力データで検出  !!")
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            if torch.isinf(scans).any():
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print("!!  異常値 (Inf) を入力データで検出  !!")
+                print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            targets = targets[:, -1, :]
+            outputs = model(scans) # 2次元のままモデルに入力)
+            loss = criterion(outputs, targets)
+            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+            train_loss += loss.item()
+        
+        avg_train_loss = train_loss / len(train_loader)
+        print(f'====> Epoch {epoch+1} Average Train Loss: {avg_train_loss:.4f}')
 
-            running_loss += loss.item()
+        avg_val_loss = validate_step(model, val_loader, device, criterion_val, cfg)
 
-            if (i + 1) % cfg.train.log_interval == 0:
-                avg_loss = running_loss / cfg.train.log_interval
-                writer.add_scalar("train/loss", avg_loss, epoch * len(dataloader) + i)
-                running_loss = 0.0
+        writer.add_scalar('Loss/train', avg_train_loss, epoch + 1)
+        writer.add_scalar('Loss/val', avg_val_loss, epoch + 1)
+        
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), best_model_save_path)
+            print(f"モデルを保存しました: {best_model_save_path} (Validation Loss: {best_val_loss:.4f})")
 
-        avg_epoch_loss = running_loss / max(1, len(dataloader))
-        is_best = avg_epoch_loss < best_loss
-        if is_best:
-            best_loss = avg_epoch_loss
-
-        save_checkpoint(model, ckpt_dir, is_best)
-        writer.add_scalar("epoch/loss", avg_epoch_loss, epoch)
-        print(f"[Epoch {epoch+1}] Average Loss: {avg_epoch_loss:.6f} | Best: {best_loss:.6f}")
-
+    torch.save(model.state_dict(), last_model_save_path)
+    print(f"最終エポックのモデルを保存しました: {last_model_save_path}")
     writer.close()
-    print("Training finished ✅")
 
+def validate_step(model: TinyLidarNet, val_loader: DataLoader, device: torch.device, criterion: WeightedSmoothL1Loss, cfg: DictConfig) -> float:
+    model.eval()
+    val_loss = 0
+    with torch.no_grad():
+        for data_dict in tqdm(val_loader, desc="Validation"):
+            scans = data_dict['scan'].to(device) # -> [64, 1, 1080]
 
-if __name__ == "__main__":
+            targets = data_dict['control_cmd'].to(device)
+            targets = targets[:, -1, :]
+
+            outputs = model(scans) # 2次元のままモデルに入力
+            
+            loss = criterion(outputs, targets)
+            val_loss += loss.item()
+            
+    avg_val_loss = val_loss / len(val_loader)
+    print(f'====> Validation set: Average loss: {avg_val_loss:.4f}')
+    return avg_val_loss
+
+if __name__ == '__main__':
     main()

@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from pathlib import Path
 import argparse
-from src.model.tinylidarnet import TinyLidarNet, TinyLidarNetSmall
+from src.model import TinyLidarNet, TinyLidarNetSmall
 
 
 # ============================================================
