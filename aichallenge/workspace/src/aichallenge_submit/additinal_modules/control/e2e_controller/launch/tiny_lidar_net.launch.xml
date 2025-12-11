@@ -15,6 +15,7 @@
 
     <param from="$(var tiny_lidar_net_node_param)"/>
     <param name="model.ckpt_path" value="$(var ckpt_path)"/>
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
     <remap from="/scan" to="$(var scan_topic)"/>
     <remap from="/awsim/control_cmd" to="$(var control_cmd_topic)"/>
   </node>
