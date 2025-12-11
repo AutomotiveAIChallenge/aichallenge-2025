@@ -322,7 +322,7 @@ if __name__ == '__main__':
     input_group.add_argument('--bag_list', type=str, 
                              help='A text file containing a list of paths to rosbag directories (one path per line).')
     
-    parser.add_argument('--config', type=str, default='config/extract_data.yaml', help='Path to the config file.')
+    parser.add_argument('--config', type=str, default='config/extract_data_from_bag.yaml', help='Path to the config file.')
     args = parser.parse_args()
     
     output_path = Path(args.output_dir)
