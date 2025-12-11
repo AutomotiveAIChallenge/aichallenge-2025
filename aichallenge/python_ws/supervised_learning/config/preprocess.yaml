@@ -1,0 +1,55 @@
+# (任意) 使用するCPUコア数。
+num_workers: 8
+
+# データキー設定 (入力ファイルに合わせる)
+data_keys:
+  scan_dataset: 'scan'
+  control_dataset: 'control_cmd'
+  time_columns:
+    sec: 'sec'
+    nanosec: 'nanosec'
+    timestamp: 'timestamp'
+  scan_columns:
+    ranges: 'ranges'
+    intensities: 'intensities'
+
+sync:
+  # 許容する最大時間差（秒）。0.1秒 = 100ミリ秒
+  tolerance_seconds: 0.05
+
+# --- フィルタリング設定 ---
+filtering:
+  # 人間介入データに関するフィルタ
+  human_intervention:
+    # このフィルタを有効にするか (true/false)
+    enabled: true
+    # 判定に使用する列名
+    column: 'steering_tire_rotation_rate'
+    # フィルタリングする値
+    flag_value: 1.0
+  
+  # 特定の周回（ラップ）に関するフィルタ
+  target_laps:
+    # このフィルタを有効にするか (true/false)
+    enabled: true
+    # ラップ番号が格納されている列名
+    column: 'speed'
+    # 抽出したいラップ番号のリスト
+    laps: 
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4 
+      - 5
+      - 6
+      - 7
+
+# 出力設定
+output:
+  # 最終的にファイルに書き込む制御コマンドの列リスト
+  control_columns_to_write:
+    - 'speed'
+    - 'acceleration'
+    - 'steering_tire_angle'
+    - 'steering_tire_rotation_rate'
