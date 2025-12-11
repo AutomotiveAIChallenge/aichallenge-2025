@@ -1,45 +1,26 @@
-# HDF5への書き込みバッファサイズ
-buffer_size: 1000
-
-# -------------------------------------------------------------
-# HDF5データセットのキー (左側) と 
-# ROSトピック名 (右側) の対応付け
-# -------------------------------------------------------------
 topic_mapping:
-  # 制御
   control_cmd: /awsim/control_cmd
-  
-  # センサー: カメラ
-  image_raw: /sensing/camera/image_raw
-  camera_info: /sensing/camera/camera_info
-  
-  # センサー: IMU
   imu_raw: /sensing/imu/imu_raw
-  
-  # センサー: GNSS
   nav_sat_fix: /sensing/gnss/nav_sat_fix
-  
-  # センサー: LiDAR
   scan: /scan
-  
-  # 車両状態
   steering_status: /vehicle/status/steering_status
   velocity_status: /vehicle/status/velocity_status
-  
-  # 自己位置推定
   pose_with_covariance: /localization/pose_with_covariance
 
-# -------------------------------------------------------------
-# 上記で定義したキー (HDF5データセット名) ごとに、
-# 抽出処理を実行するか (true) しないか (false) を指定
-# -------------------------------------------------------------
 topics:
   control_cmd: true
-  image_raw: true
-  camera_info: true
   imu_raw: true
   nav_sat_fix: true
   scan: true
   steering_status: true
   velocity_status: true
   pose_with_covariance: true
+
+compression:
+  complib: blosc:zstd
+  complevel: 1
+  shuffle: byte
+
+sync:
+  reference_topic: /awsim/control_cmd
+  tolerance_ms: 50.0
