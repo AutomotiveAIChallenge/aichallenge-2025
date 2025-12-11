@@ -7,7 +7,14 @@
   <arg name="pose_topic" default="/localization/pose_with_covariance"/>
   <arg name="scan_topic" default="/scan"/>
   
-  <!-- joy manager node-->
+  <node pkg="tf2_ros"
+        exec="static_transform_publisher"
+        name="static_tf_pub_laser"
+        args="0.0 0.0 0.0 0 0 0 sensor_kit_base_link laser"
+        >
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
+  </node>
+  
   <node pkg="scan_generator"
         exec="scan_generator_node"
         name="scan_generator_node"
@@ -15,6 +22,8 @@
 
     <param from="$(var scan_param)"/>
     <param name="csv_path" value="$(var csv_path)"/>
+    
+    <param name="use_sim_time" value="$(var use_sim_time)"/>
 
     <remap from="/localization/pose_with_covariance" to="$(var pose_topic)"/>
     <remap from="/scan" to="$(var scan_topic)"/>

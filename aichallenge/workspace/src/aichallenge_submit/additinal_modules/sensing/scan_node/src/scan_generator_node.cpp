@@ -1,4 +1,4 @@
-#include "scan_generator_node.hpp"
+#include "scan_generator/scan_generator_node.hpp"
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
