@@ -72,6 +72,7 @@
         <include file="$(find-pkg-share e2e_controller)/launch/tiny_lidar_net.launch.xml">
             <arg name="ckpt_path" value="$(var ckpt_path)"/>
             <arg name="model_type" value="$(var model_type)"/>
+            <arg name="control_cmd_topic" value="/ackermann_cmd"/>
         </include>
     </group>
 </launch>

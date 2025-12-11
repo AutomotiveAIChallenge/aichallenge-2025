@@ -5,7 +5,7 @@
     model:
       input_dim: 1080            # LiDARスキャンの入力次元
       output_dim: 2              # 出力（steering, throttleなど）
-      architecture: "small"      # "normal" または "small"
+      architecture: "normal"      # "normal" または "small"
       ckpt_path: "/path/to/tinylidarnet_weights.npy"
     
     control_mode: "fixed"          # "ai" または "fixed"
