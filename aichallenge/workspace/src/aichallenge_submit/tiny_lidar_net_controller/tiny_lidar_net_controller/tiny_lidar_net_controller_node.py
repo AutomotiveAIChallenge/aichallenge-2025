@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+import math
 import time
 import numpy as np
 
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, PointCloud2
+from sensor_msgs_py import point_cloud2 as pc2
 from autoware_auto_control_msgs.msg import AckermannControlCommand
 
 from tiny_lidar_net_controller.model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
@@ -27,6 +29,7 @@ class TinyLidarNetNode(Node):
         self.declare_parameter('model.architecture', 'large')  # 'large' or 'small'
         self.declare_parameter('model.ckpt_path', '')
         self.declare_parameter('acceleration', 0.1)
+        self.declare_parameter('scan_topic', '/sensing/lidar/pointcloud')
         self.declare_parameter('control_mode', 'ai')  # 'ai' or 'fixed'
         self.declare_parameter('debug', False)        # True/False
 
@@ -37,6 +40,7 @@ class TinyLidarNetNode(Node):
         self.model_architecture = self.get_parameter('model.architecture').value
         self.ckpt_path = self.get_parameter('model.ckpt_path').value
         self.acceleration = self.get_parameter('acceleration').value
+        self.scan_topic = self.get_parameter('scan_topic').value
         self.control_mode = self.get_parameter('control_mode').value.lower()
         self.debug = self.get_parameter('debug').value
 
@@ -68,10 +72,10 @@ class TinyLidarNetNode(Node):
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
-            depth=1
+            depth=5
         )
 
-        self.create_subscription(LaserScan, "/scan", self.scan_callback, qos)
+        self.create_subscription(PointCloud2, self.scan_topic, self.pointcloud_callback, qos)
         self.control_pub = self.create_publisher(AckermannControlCommand, "/awsim/control_cmd", 1)
 
         self.get_logger().info("TinyLidarNetNode initialized.")
@@ -168,8 +172,9 @@ class TinyLidarNetNode(Node):
         current_len = len(ranges)
         
         if current_len > self.input_dim:
-            idx = np.linspace(0, current_len - 1, self.input_dim, dtype=int)
-            ranges = ranges[idx]
+            # Downsample (e.g., 18000 -> 1080) with linear interpolation to evenly spread samples.
+            target_pos = np.linspace(0, current_len - 1, self.input_dim, dtype=np.float32)
+            ranges = np.interp(target_pos, np.arange(current_len), ranges).astype(np.float32)
         elif current_len < self.input_dim:
             ranges = np.pad(ranges, (0, self.input_dim - current_len), 'constant')
             

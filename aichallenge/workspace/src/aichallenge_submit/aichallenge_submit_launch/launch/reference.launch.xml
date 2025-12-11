@@ -152,10 +152,10 @@
 
   <!-- E2E Controller -->
   <group if="$(var e2e)">
-      <include file="$(find-pkg-share laserscan_generator)/launch/laserscan_generator.launch.xml" >
+      <!-- <include file="$(find-pkg-share laserscan_generator)/launch/laserscan_generator.launch.xml" >
           <arg name="use_sim_time" value="$(var use_sim_time)"/>
           <arg name="csv_path" value="$(var csv_path)"/>
-      </include>
+      </include> -->
       <include file="$(find-pkg-share tiny_lidar_net_controller)/launch/tiny_lidar_net.launch.xml">
           <arg name="ckpt_path" value="$(var ckpt_path)"/>
           <arg name="model_type" value="$(var model_type)"/>

@@ -9,6 +9,6 @@
       ckpt_path: "/path/to/tinylidarnet_weights.npy"
     
     control_mode: "fixed"          # "ai" または "fixed"
-    acceleration: 1.0            # 固定加速度コマンド mode:fixed の場合に使用
+    acceleration: 0.5            # 固定加速度コマンド mode:fixed の場合に使用
 
     debug: false

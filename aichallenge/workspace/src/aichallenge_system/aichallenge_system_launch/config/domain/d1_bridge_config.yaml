@@ -52,15 +52,21 @@ topics:
 
   d1/sensing/lidar/pointcloud:
     type: sensor_msgs/msg/PointCloud2
+    qos:
+      reliability: best_effort
     remap: /sensing/lidar/pointcloud
     reversed: True
 
   d1/sensing/camera/image_raw:
     type: sensor_msgs/msg/Image
+    qos:
+      reliability: best_effort
     remap: /sensing/camera/image_raw
     reversed: True  
     
   d1/sensing/camera/camera_info:
     type: sensor_msgs/msg/CameraInfo
+    qos:
+      reliability: best_effort
     remap: /sensing/camera/camera_info
     reversed: True
