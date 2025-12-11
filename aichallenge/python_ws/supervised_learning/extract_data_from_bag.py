@@ -254,10 +254,19 @@ def process_bag(bag_path: Path, output_h5_path: Path, config: dict, active_topic
                             buffers[topic].append((s.sec, s.nanosec, msg.steering_tire_angle))
 
                         elif dataset_name == 'velocity_status':
-                            s = msg.stamp
-                            buffers[topic].append((s.sec, s.nanosec, 
-                                                 msg.longitudinal_velocity, msg.lateral_velocity, msg.heading_rate))
-                        
+                            try:
+                                
+                                h = msg.header
+                                buffers[topic].append((
+                                    h.stamp.sec,
+                                    h.stamp.nanosec,
+                                    msg.longitudinal_velocity,
+                                    msg.lateral_velocity,
+                                    msg.heading_rate
+                                ))
+                            except Exception as e:
+                                print(f"  -> Skipping malformed velocity_status message: {e}")
+
                         elif dataset_name == 'pose_with_covariance':
                             h = msg.header
                             p, o = msg.pose.pose.position, msg.pose.pose.orientation
