@@ -1,90 +1,153 @@
-import h5py
-import hdf5plugin
 import numpy as np
-from torch.utils.data import Dataset
 from pathlib import Path
-from typing import List, Optional, Callable, Dict, Any
+from torch.utils.data import Dataset
+from typing import Dict, Any, Optional, Callable, List
+from PIL import Image
+import torch
+
+# ------------------------------------------------------------
+# Utility
+# ------------------------------------------------------------
+def _npstruct_to_dict(x: np.void) -> Dict[str, Any]:
+    names = x.dtype.names or []
+    return {k: x[k].item() if isinstance(x[k], np.ndarray) and x[k].shape == () else x[k] for k in names}
 
 
-class HDF5SequenceDataset(Dataset):
-    def __init__(self, h5_path: Path, keys_to_load: List[str], len_key: str, transform: Optional[Callable] = None):
-        self.h5_path = Path(h5_path)
-        self.keys_to_load = keys_to_load
-        self.len_key = len_key
+def _to_tensor_if_numeric(x):
+    if isinstance(x, np.ndarray) and x.dtype != object:
+        return torch.from_numpy(x)
+    if isinstance(x, (float, int)):
+        return torch.tensor(x)
+    return x
+
+
+# ------------------------------------------------------------
+# Dataset
+# ------------------------------------------------------------
+class SequenceDataset(Dataset):
+    """
+    単一シーケンスの LiDAR + Camera + Control Command データを管理する Dataset クラス。
+    Transform: ImageTransform / ScanTransform の併用をサポート。
+    """
+
+    def __init__(
+        self,
+        seq_dir: Path,
+        keys_to_load: List[str],
+        transform: Optional[Callable] = None,         # ScanTransform など
+        image_transform: Optional[Callable] = None,   # ImageTransform など
+        prefer_len_key_order: Optional[List[str]] = None,
+    ):
+        self.seq_dir = Path(seq_dir)
+        self.keys_to_load = list(keys_to_load)
         self.transform = transform
-        self._file_handle: Optional[h5py.File] = None
-        self._is_open = False
+        self.image_transform = image_transform
 
-        if not self.h5_path.exists():
-            raise FileNotFoundError(f"HDF5 file not found at: {self.h5_path}")
+        seq_data_dir = self.seq_dir / "sequence_data"
+        cam_dir = self.seq_dir / "camera_front"
 
-        try:
-            with h5py.File(self.h5_path, "r") as f:
-                if self.len_key not in f:
-                    raise KeyError(f"Length key '{self.len_key}' not found in HDF5 file.")
-                self.dataset_len = len(f[self.len_key])
-                self.valid_keys = [k for k in self.keys_to_load if k in f]
-        except Exception as e:
-            print(f"Error opening {self.h5_path}: {e}")
-            self.dataset_len = 0
-            self.valid_keys = []
+        # --- NPYキャッシュ ---
+        self.arrays: Dict[str, np.ndarray] = {}
+        self.key_lengths: Dict[str, int] = {}
 
-    def _open_file(self):
-        if not self._is_open:
-            self._file_handle = h5py.File(self.h5_path, "r")
-            self._is_open = True
+        for key in self.keys_to_load:
+            npy_path = seq_data_dir / f"{key}.npy"
+            if npy_path.exists():
+                arr = np.load(npy_path, allow_pickle=True)
+                self.arrays[key] = arr
+                self.key_lengths[key] = len(arr)
+
+        # --- 画像 ---
+        self.image_paths: List[Path] = []
+        if "image" in self.keys_to_load:
+            if cam_dir.exists():
+                self.image_paths = sorted(cam_dir.glob("*.png"))
+            elif (self.seq_dir / "images").exists():
+                self.image_paths = sorted((self.seq_dir / "images").glob("*.png"))
+
+        # --- データセット長 ---
+        prefer_len_key_order = prefer_len_key_order or ["timestamps", "control_cmd", "scan"]
+        length = 0
+        for k in prefer_len_key_order:
+            if k in self.key_lengths:
+                length = self.key_lengths[k]
+                break
+        if length == 0:
+            length = max(self.key_lengths.values(), default=0)
+        length = max(length, len(self.image_paths))
+        self.dataset_len = int(length)
+
+        print(f"[LOAD] {self.seq_dir.name} → frames={self.dataset_len} (images={len(self.image_paths)}, npy={len(self.arrays)})")
 
     def __len__(self):
         return self.dataset_len
 
-    def __getitem__(self, idx: int) -> Dict[str, Any]:
-        if not self._is_open:
-            self._open_file()
+    # --------------------------------------------------------
+    # 各キーのデータ取得
+    # --------------------------------------------------------
+    def _get_item_from_key(self, key: str, idx: int):
+        arr = self.arrays.get(key)
+        if arr is None or idx >= len(arr):
+            return None
 
+        item = arr[idx]
+        if isinstance(item, np.void):
+            item = _npstruct_to_dict(item)
+
+        # --- LiDAR scan ---
+        if key == "scan" and isinstance(item, dict):
+            ranges = item.get("ranges", None)
+            if isinstance(ranges, np.ndarray) and ranges.size > 0:
+                # 🔹 NaN / Inf 除去（前処理統一）
+                ranges = np.nan_to_num(ranges, nan=0.0, posinf=30.0, neginf=0.0)
+                return {"ranges": ranges.astype(np.float32)}
+            else:
+                return None
+
+        # --- 一般的な dict 構造 ---
+        if isinstance(item, dict):
+            ret = {}
+            for k, v in item.items():
+                if isinstance(v, np.ndarray) and v.dtype != object:
+                    ret[k] = v
+                elif isinstance(v, (float, int)):
+                    ret[k] = v
+                else:
+                    ret[k] = v
+            return ret
+
+        # --- 純粋な数値/配列 ---
+        return item
+
+    # --------------------------------------------------------
+    # getitem
+    # --------------------------------------------------------
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
         if idx < 0:
             idx = self.dataset_len + idx
         if not (0 <= idx < self.dataset_len):
             raise IndexError(f"Index {idx} out of range")
 
-        f = self._file_handle
-        data = {}
+        data: Dict[str, Any] = {}
 
-        try:
-            for key in self.valid_keys:
-                item = f[key][idx]
+        # --- 画像読み込み ---
+        if "image" in self.keys_to_load and self.image_paths:
+            if idx < len(self.image_paths):
+                img = Image.open(self.image_paths[idx]).convert("RGB")
+                data["image_raw"] = np.asarray(img, dtype=np.uint8)
 
-                if isinstance(item, np.void):
-                    # HDF5構造体をdict化
-                    data[key] = {name: item[name] for name in item.dtype.names}
-                elif isinstance(item, (bytes, str)):
-                    data[key] = item
-                else:
-                    data[key] = np.array(item)
+        # --- 各種 NPYキー ---
+        for key in self.keys_to_load:
+            if key == "image":
+                continue
+            val = self._get_item_from_key(key, idx)
+            if val is not None:
+                data[key] = val
 
-            if "scan" in self.valid_keys:
-                data["scan_attrs"] = dict(f["scan"].attrs)
-
-        except Exception as e:
-            print(f"Error reading index {idx} from {self.h5_path}: {e}")
-            return {}
-
+        # --- Transform 適用 ---
+        if self.image_transform:
+            data = self.image_transform(data)
         if self.transform:
             data = self.transform(data)
 
         return data
-
-    def close(self):
-        """h5ファイルを安全にクローズ"""
-        if self._file_handle is not None and self._is_open:
-            try:
-                self._file_handle.close()
-            except Exception:
-                pass
-        self._file_handle = None
-        self._is_open = False 
-
-    def __del__(self):
-        try:
-            self.close()
-        except Exception:
-            pass

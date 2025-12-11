@@ -2,17 +2,21 @@ import sys
 sys.path.append('../') 
 
 from pathlib import Path
+from torch.utils.data import DataLoader
 from src.data.concat_dataset import MultiSequenceConcatDataset
 
-root = Path("./../datasets/")
-h5_files = sorted(root.glob("*_synced.h5"))
+root = Path("./../datasets")
+seq_dirs = sorted([p for p in root.iterdir() if p.is_dir()])
 
 dataset = MultiSequenceConcatDataset(
-    h5_paths=h5_files,
-    keys_to_load=["control_cmd", "velocity_status", "pose_with_covariance"],
-    len_key="timestamp"
+    seq_dirs=seq_dirs,
+    keys_to_load=["control_cmd", "imu_raw", "velocity_status"],
 )
 
-print(len(dataset))  # 全シーケンス合計長
-sample = dataset[0]
-print(sample.keys())  # dict_keys(['control_cmd', 'velocity_status', 'pose_with_covariance'])
+loader = DataLoader(dataset, batch_size=8, shuffle=True)
+
+for batch in loader:
+    print(batch.keys())
+    print(batch["image"].shape)
+    print(batch["control_cmd"])
+    break

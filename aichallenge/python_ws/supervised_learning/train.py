@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 from tqdm import tqdm
-import numpy as np
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from src.data.concat_dataset import MultiSequenceConcatDataset
+from src.data.transform import ImageTransform, ScanTransform
 from src.model.tinylidarnet import TinyLidarNet, TinyLidarNetSmall
 
 
@@ -17,9 +16,6 @@ from src.model.tinylidarnet import TinyLidarNet, TinyLidarNetSmall
 # Utility
 # ============================================================
 def save_checkpoint(model: nn.Module, ckpt_dir: Path, is_best: bool = False):
-    """
-    Save model weights only (no optimizer, no loss)
-    """
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     last_path = ckpt_dir / "last.pth"
     best_path = ckpt_dir / "best.pth"
@@ -46,16 +42,19 @@ def main(cfg: DictConfig):
     # ------------------------------------------------------------
     # 2. Dataset 構築
     # ------------------------------------------------------------
-    h5_root = Path(cfg.dataset.h5_root)
-    h5_files = sorted(h5_root.rglob("*.h5"))
-    if not h5_files:
-        raise FileNotFoundError(f"No .h5 files found under {h5_root}")
+    root_dir = Path(cfg.dataset.root)
+    seq_dirs = [p for p in root_dir.iterdir() if (p / "sequence_data").exists()]
 
-    print(f"Found {len(h5_files)} HDF5 files")
+    if not seq_dirs:
+        raise FileNotFoundError(f"No sequence_data directories found under {root_dir}")
+
+    print(f"Found {len(seq_dirs)} sequences")
+
     dataset = MultiSequenceConcatDataset(
-        h5_paths=h5_files,
-        keys_to_load=cfg.dataset.keys_to_load,
-        len_key=cfg.dataset.len_key,
+        seq_dirs=seq_dirs,
+        keys_to_load=["scan", "control_cmd", "image"],
+        transform=ScanTransform(max_range=30.0, normalize=True, add_noise=True),
+        image_transform=ImageTransform(resize=(224, 224), horizontal_flip=True, normalize=True)
     )
 
     dataloader = DataLoader(
@@ -108,23 +107,33 @@ def main(cfg: DictConfig):
 
         for i, batch in enumerate(tqdm(dataloader, desc=f"[Epoch {epoch+1}/{cfg.train.epochs}]")):
             scan = batch.get("scan", None)
-            cmd = batch.get("control_cmd", None)
-            if scan is None or cmd is None:
+            ctrl = batch.get("control_cmd", None)
+            if scan is None or ctrl is None:
                 continue
 
-            scan_input = []
-            for s in scan:
-                if isinstance(s, np.void):
-                    continue
-                ranges = np.array(s["ranges"], dtype=np.float32)
-                scan_input.append(ranges)
-            if not scan_input:
+            # --- LiDAR スキャン処理（ranges のみ使用）---
+            if isinstance(scan, dict) and "ranges" in scan:
+                x = scan["ranges"].to(device).unsqueeze(1).float()  # [B, 1, N]
+            else:
+                print("Invalid scan structure, skipping...")
                 continue
 
-            x = torch.tensor(scan_input, dtype=torch.float32, device=device).unsqueeze(1)
-            y = torch.tensor([[c["steering_tire_angle"], c["speed"]] for c in cmd],
-                             dtype=torch.float32, device=device)
+            # --- Control コマンド処理（collate済み辞書対応）---
+            if isinstance(ctrl, dict) and "steer" in ctrl and "accel" in ctrl:
+                y = torch.stack([ctrl["steer"], ctrl["accel"]], dim=1).to(device).float()  # [B, 2]
+            else:
+                print("No valid control commands found in batch, skipping...")
+                continue
 
+            num_inf = torch.isinf(x).sum().item()
+            num_nan = torch.isnan(x).sum().item()
+            if num_inf > 0 or num_nan > 0:
+                print(f"[WARN] Detected {num_inf} inf and {num_nan} nan values in scan batch.")
+                # 位置確認用: 例として最初の1サンプルを確認
+                bad_idx = torch.where(torch.isinf(x[0]) | torch.isnan(x[0]))[1]
+                print(f"  Example bad indices: {bad_idx[:10].tolist()}")
+
+            # --- Forward + Backward ---
             pred = model(x)
             loss = criterion(pred, y)
 
@@ -137,8 +146,8 @@ def main(cfg: DictConfig):
             if (i + 1) % cfg.train.log_interval == 0:
                 avg_loss = running_loss / cfg.train.log_interval
                 writer.add_scalar("train/loss", avg_loss, epoch * len(dataloader) + i)
-                print(f"Epoch [{epoch+1}/{cfg.train.epochs}] Step [{i+1}/{len(dataloader)}] "
-                      f"Loss: {avg_loss:.6f}")
+                # print(f"Epoch [{epoch+1}/{cfg.train.epochs}] Step [{i+1}/{len(dataloader)}] "
+                #     f"Loss: {avg_loss:.6f}")
                 running_loss = 0.0
 
         # --- エポック単位での保存 ---

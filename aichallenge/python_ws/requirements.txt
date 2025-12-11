@@ -5,3 +5,4 @@ tqdm
 pyyaml
 omegaconf
 hydra-core
+tensorboard

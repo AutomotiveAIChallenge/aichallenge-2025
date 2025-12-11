@@ -24,3 +24,9 @@ compression:
 sync:
   reference_topic: /awsim/control_cmd
   tolerance_ms: 50.0
+
+
+## 人間の制御データのみ取得
+filter_human_only: true
+## 指定されたlapのみ取得
+target_laps: [0, 1, 2, 3]
