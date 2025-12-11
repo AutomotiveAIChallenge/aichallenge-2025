@@ -46,6 +46,7 @@ TOPICS=(
     "/planning/scenario_planning/trajectory"
     "/robot_description"
     "/rosout"
+    "/scan"
     "/sensing/gnss/gnss_fixed"
     "/sensing/gnss/nav_sat_fix"
     "/sensing/gnss/pose"
