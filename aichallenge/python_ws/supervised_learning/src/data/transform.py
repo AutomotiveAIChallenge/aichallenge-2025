@@ -1,5 +1,6 @@
 import torch
 import torchvision.transforms.v2 as T
+import numpy as np
 from typing import Dict, Any, Optional, Tuple, List
 
 class ImageTransform:
