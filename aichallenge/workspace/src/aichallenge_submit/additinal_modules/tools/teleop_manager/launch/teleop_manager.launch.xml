@@ -24,11 +24,11 @@
     <!-- joy -->
     <remap from="/joy" to="/joy"/>
     <!-- 自律走行　コマンド -->
-    <remap from="/ackermann_cmd" to="$(arg self_control_topic)"/>
+    <remap from="/ackermann_cmd" to="$(var self_control_topic)"/>
     <!-- AWSIMへの入力 -->
-    <remap from="/cmd_drive" to="$(arg auto_drive_topic)"/> 
+    <remap from="/cmd_drive" to="$(var auto_drive_topic)"/> 
     <!-- rosbag制御トリガ -->
-    <remap from="/rosbag2_recorder/trigger" to="$(arg trigger_topic)"/>
+    <remap from="/rosbag2_recorder/trigger" to="$(var trigger_topic)"/>
     <!-- offset トリガ -->
     <remap from="/steer_offset_inc" to="/steer_offset_inc"/>
     <remap from="/steer_offset_dec" to="/steer_offset_dec"/>
