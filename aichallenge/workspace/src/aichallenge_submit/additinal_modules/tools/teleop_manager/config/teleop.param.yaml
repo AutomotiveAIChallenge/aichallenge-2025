@@ -3,7 +3,7 @@
     # --- 基本設定 ---
     speed_scale:          1.0  
     steer_scale:          1.0
-    timer_hz:             100.0
+    timer_hz:             50.0
     joy_timeout_sec:      0.5 
 
     # --- モード切替ボタン ---
