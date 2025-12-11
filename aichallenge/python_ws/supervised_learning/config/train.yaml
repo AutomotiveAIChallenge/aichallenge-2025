@@ -6,7 +6,6 @@ model:
 dataset:
   root: ./datasets
   keys_to_load: ["scan", "control_cmd"]
-  len_key: "timestamp"
   batch_size: 64
   num_workers: 4
   shuffle: true
