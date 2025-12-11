@@ -3,12 +3,12 @@
     <arg name="simulation" default="true"/>
     <arg name="use_sim_time" default="true"/>
     <arg name="run_rviz" default="true"/>
-    <arg name="record" default="false"/>
+    <arg name="record" default="true"/>
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
     <!-- E2E関連のパラメータ -->
-    <arg name="e2e" default="false"/>
+    <arg name="e2e" default="true"/>
     <arg name="ckpt_path" default="$(find-pkg-share e2e_controller)/ckpt/tinylidarnet_weights.npy"/>
     <arg name="model_type" default="tiny_lidar_net"/>
 
