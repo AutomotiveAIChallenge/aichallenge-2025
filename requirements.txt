@@ -28,4 +28,4 @@ pyproj
 pycocotools
 grad-cam
 tensorboard
-tomli
+tomli==2.3.0
