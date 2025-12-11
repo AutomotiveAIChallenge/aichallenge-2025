@@ -7,6 +7,10 @@
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
+    <!-- E2E関連のパラメータ -->
+    <arg name="e2e" default="false"/>
+    <arg name="ckpt_path" default="$(find-pkg-share e2e_controller)/ckpt/tiny_lidar_net_weights.npz"/>
+
     <arg name="csv_path" default="$(find-pkg-share original_launch)/map/lane.csv"/>
 
     <let name="rviz_config" value="$(find-pkg-share original_launch)/rviz/e2e.rviz" if="$(var simulation)"/>
@@ -61,5 +65,10 @@
 
     <group if="$(var record)">
         <include file="$(find-pkg-share bag_manager_py)/launch/bag_manager.launch.xml"/>
+    </group>
+
+    <group if="$(var e2e)">
+        <include file="$(find-pkg-share e2e_controller)/launch/tiny_lidar_net.launch.xml"/>
+        <param name="model.ckpt_path" value="$(var ckpt_path)"/>
     </group>
 </launch>
