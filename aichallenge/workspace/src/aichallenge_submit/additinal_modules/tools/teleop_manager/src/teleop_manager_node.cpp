@@ -11,7 +11,7 @@ using std::placeholders::_1;
 TeleopManagerNode::TeleopManagerNode()
 : Node("teleop_manager_node"),
   joy_active_(false),
-  ack_active_(false),
+  ack_active_(true),
   joy_speed_(0.0),
   joy_steer_(0.0),
   current_lap_(0.0f),
@@ -159,18 +159,8 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
   }
 
   // 2) Mode selection
-  bool joy_pressed = (static_cast<int>(msg->buttons.size()) > joy_button_index_
-                      && msg->buttons[joy_button_index_] == 1);
-  bool ack_pressed = (static_cast<int>(msg->buttons.size()) > ack_button_index_
-                      && msg->buttons[ack_button_index_] == 1);
-  
-  if (ack_pressed) {
-    ack_active_ = true; joy_active_ = false;
-  } else if (joy_pressed) {
-    joy_active_ = true; ack_active_ = false;
-  } else {
-    joy_active_ = false; ack_active_ = false;
-  }
+  ack_active_ = true;
+  joy_active_ = false;
 
   // 3) Calculate speed/steer in Joy mode (using current scales)
   if (joy_active_) {
@@ -226,11 +216,11 @@ void TeleopManagerNode::timer_callback()
   rclcpp::Time current_time = this->get_clock()->now();
 
   if ((current_time - last_joy_msg_time_).seconds() > joy_timeout_sec_) {
-    if (joy_active_ || ack_active_) {
+    if (joy_active_) {
       RCLCPP_WARN(get_logger(), "Joy message timed out! Stopping the vehicle.");
     }
     joy_active_ = false;
-    ack_active_ = false;
+    // ack_active_ = false; // Don't set to false
   }
 
   if (joy_active_) {
@@ -241,12 +231,13 @@ void TeleopManagerNode::timer_callback()
   } else if (ack_active_) {
     out = last_autonomy_msg_;
     out.lateral.steering_tire_rotation_rate = 0.5;
-  } else {
-    // Stop
-    out.longitudinal.acceleration = 0.0;
-    out.lateral.steering_tire_angle = 0.0;
-    out.lateral.steering_tire_rotation_rate = 0.0;
   }
+  // } else {
+  //   // Stop
+  //   out.longitudinal.acceleration = 0.0;
+  //   out.lateral.steering_tire_angle = 0.0;
+  //   out.lateral.steering_tire_rotation_rate = 0.0;
+  // }
 
   out.stamp = current_time;
   out.longitudinal.stamp = current_time;
