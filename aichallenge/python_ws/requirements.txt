@@ -1,0 +1,5 @@
+h5py
+hdf5plugin
+numpy==1.26
+tqdm
+pyyaml
