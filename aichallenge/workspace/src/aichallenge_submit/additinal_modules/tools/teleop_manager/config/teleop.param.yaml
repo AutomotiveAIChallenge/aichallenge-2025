@@ -4,16 +4,21 @@
     speed_scale:          1.0  
     steer_scale:          1.0
     timer_hz:             100.0
+    joy_timeout_sec:      0.5 
 
     # --- モード切替ボタン ---
-    joy_button_index:     2   # △ボタンで手動モード humble: 3, foxy: 2
-    ack_button_index:     3   # □ボタンで自律モード humble: 0, foxy: 3
-    awsim_button_index:   1   # ○ボタンでAWSIMモード humble: 2, foxy: 2
-    reset_button_index:   0   # でリセット humble: 0, foxy: 0
+    joy_button_index:     2   # △ボタンで手動モード
+    ack_button_index:     3   # □ボタンで自律モード
+    awsim_button_index:   1   # ○ボタンでAWSIMモード
+    reset_button_index:   0   # ×ボタンでリセット
 
     # --- start/stop トリガボタン ---
-    start_button_index:   7   # R2 ボタンで start=true humble: 7, foxy: 7
-    stop_button_index:    6   # L2 ボタンで start=false humble: 6, foxy: 6
+    start_button_index:   7   # R2 ボタンで start=true
+    stop_button_index:    6   # L2 ボタンで start=false
+
+    # --- 十字キー（D-pad）軸インデックス ---
+    dpad_lr_axis_index:   6   # 左右 (axes[6])
+    dpad_ud_axis_index:   7   # 上下 (axes[7])
 
 ## button index (DualShock4) humble
 

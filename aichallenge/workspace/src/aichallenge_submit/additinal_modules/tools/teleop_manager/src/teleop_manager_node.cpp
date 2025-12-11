@@ -17,16 +17,15 @@ TeleopManagerNode::TeleopManagerNode()
   current_lap_(0.0f),
   prev_start_pressed_(false),
   prev_stop_pressed_(false),
-  prev_steer_inc_pressed_(false),
-  prev_steer_dec_pressed_(false),
-  prev_speed_inc_pressed_(false),
-  prev_speed_dec_pressed_(false),
-  prev_scale_inc_pressed_(false),
-  prev_scale_dec_pressed_(false),
+  // 古いデバウンスフラグを削除
   prev_awsim_button_pressed_(false),
-  prev_reset_button_pressed_(false)
+  prev_reset_button_pressed_(false),
+  // スケール調整用の新しいデバウンスフラグを初期化
+  prev_steer_scale_inc_pressed_(false),
+  prev_steer_scale_dec_pressed_(false),
+  prev_speed_scale_inc_pressed_(false),
+  prev_speed_scale_dec_pressed_(false)
 {
-  // シミュレーション時刻を使用するようにノードを設定します。
   this->set_parameter(rclcpp::Parameter("use_sim_time", true));
 
   // --- Parameter Declaration & Retrieval ---
@@ -40,6 +39,8 @@ TeleopManagerNode::TeleopManagerNode()
   declare_parameter<int>("reset_button_index", 7);
   declare_parameter<double>("timer_hz", 40.0);
   declare_parameter<double>("joy_timeout_sec", 0.5);
+  declare_parameter<int>("dpad_lr_axis_index", 6); 
+  declare_parameter<int>("dpad_ud_axis_index", 7); 
 
   get_parameter("speed_scale", speed_scale_);
   get_parameter("steer_scale", steer_scale_);
@@ -51,8 +52,9 @@ TeleopManagerNode::TeleopManagerNode()
   get_parameter("reset_button_index", reset_button_index_);
   get_parameter("timer_hz", timer_hz_);
   get_parameter("joy_timeout_sec", joy_timeout_sec_);
+  get_parameter("dpad_lr_axis_index", dpad_lr_axis_index_);
+  get_parameter("dpad_ud_axis_index", dpad_ud_axis_index_);
 
-  // Initialize with new message structure
   last_autonomy_msg_.longitudinal.speed = 0.0;
   last_autonomy_msg_.lateral.steering_tire_angle = 0.0;
   last_joy_msg_time_ = this->get_clock()->now();
@@ -75,12 +77,8 @@ TeleopManagerNode::TeleopManagerNode()
   reset_publisher_ = create_publisher<std_msgs::msg::Empty>("/aichallenge/awsim/reset", 10);
   initialpose_publisher_ = create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("/initialpose", 10);
 
-  steer_inc_pub_ = create_publisher<std_msgs::msg::Bool>("/steer_offset_inc", 10);
-  steer_dec_pub_ = create_publisher<std_msgs::msg::Bool>("/steer_offset_dec", 10);
-  speed_inc_pub_ = create_publisher<std_msgs::msg::Bool>("/speed_offset_inc", 10);
-  speed_dec_pub_ = create_publisher<std_msgs::msg::Bool>("/speed_offset_dec", 10);
-
-  // --- Timer (for periodic command output) ---
+  
+  // --- Timer ---
   timer_ = create_wall_timer(
     std::chrono::duration<double>(1.0 / timer_hz_),
     std::bind(&TeleopManagerNode::timer_callback, this));
@@ -108,7 +106,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
 {
   last_joy_msg_time_ = this->get_clock()->now();
 
-  // 0) Start/stop buttons (with debounce)
+  // 1) Start/stop/AWSIM/Reset buttons (with debounce)
   bool curr_start = (msg->buttons.size() > start_button_index_
                      && msg->buttons[start_button_index_] == 1);
   bool curr_stop  = (msg->buttons.size() > stop_button_index_
@@ -152,7 +150,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     RCLCPP_INFO(get_logger(), "Published initial pose to /initialpose");
   }
 
-  // 1) Mode selection
+  // 2) Mode selection
   bool joy_pressed = (msg->buttons.size() > joy_button_index_
                       && msg->buttons[joy_button_index_] == 1);
   bool ack_pressed = (msg->buttons.size() > ack_button_index_
@@ -165,7 +163,7 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     joy_active_ = false; ack_active_ = false;
   }
 
-  // 2) Calculate speed/steer in Joy mode
+  // 3) Calculate speed/steer in Joy mode (using current scales)
   if (joy_active_) {
     double raw_speed = (msg->axes.size() > 1 ? msg->axes[1] : 0.0);
     double raw_steer = (msg->axes.size() > 3 ? msg->axes[3] : 0.0);
@@ -173,41 +171,37 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     joy_steer_ = raw_steer * steer_scale_;
   }
 
-  // 3) D-pad for offset triggers (with debounce)
-  double a6 = (msg->axes.size() > 6 ? msg->axes[6] : 0.0);
-  double a7 = (msg->axes.size() > 7 ? msg->axes[7] : 0.0);
+  // 4) D-pad for dynamic scale adjustment (with debounce)
+  // パラメータ化された軸インデックスを使用
+  double a_lr = (msg->axes.size() > dpad_lr_axis_index_ ? msg->axes[dpad_lr_axis_index_] : 0.0);
+  double a_ud = (msg->axes.size() > dpad_ud_axis_index_ ? msg->axes[dpad_ud_axis_index_] : 0.0);
 
-  bool steer_inc = std::abs(a6 + 1.0) < 1e-3;  // Right
-  bool steer_dec = std::abs(a6 - 1.0) < 1e-3;  // Left
-  bool speed_inc = std::abs(a7 - 1.0) < 1e-3;  // Up
-  bool speed_dec = std::abs(a7 + 1.0) < 1e-3;  // Down
+  // コントローラによって軸の+1/-1が逆の場合があるため、元のロジックを踏襲
+  bool steer_scale_inc = std::abs(a_lr + 1.0) < 1e-3;  // 右 (軸値 -1.0)
+  bool steer_scale_dec = std::abs(a_lr - 1.0) < 1e-3;  // 左 (軸値  1.0)
+  bool speed_scale_inc = std::abs(a_ud - 1.0) < 1e-3;  // 上 (軸値  1.0)
+  bool speed_scale_dec = std::abs(a_ud + 1.0) < 1e-3;  // 下 (軸値 -1.0)
 
-  if (check_button_press(steer_inc, prev_steer_inc_pressed_)) {
-    std_msgs::msg::Bool b; b.data = true; steer_inc_pub_->publish(b);
-  }
-  if (check_button_press(steer_dec, prev_steer_dec_pressed_)) {
-    std_msgs::msg::Bool b; b.data = true; steer_dec_pub_->publish(b);
-  }
-  if (check_button_press(speed_inc, prev_speed_inc_pressed_)) {
-    std_msgs::msg::Bool b; b.data = true; speed_inc_pub_->publish(b);
-  }
-  if (check_button_press(speed_dec, prev_speed_dec_pressed_)) {
-    std_msgs::msg::Bool b; b.data = true; speed_dec_pub_->publish(b);
-  }
-
-  // 4) R1/L1 for dynamic steer_scale adjustment (with debounce)
-  bool scale_inc = (msg->buttons.size() > 5 && msg->buttons[5] == 1); // R1
-  bool scale_dec = (msg->buttons.size() > 4 && msg->buttons[4] == 1); // L1
-  if (check_button_press(scale_inc, prev_scale_inc_pressed_)) {
+  // Steer Scale 調整 (左右)
+  if (check_button_press(steer_scale_inc, prev_steer_scale_inc_pressed_)) {
     steer_scale_ = std::round((steer_scale_ + 0.1) * 10.0) / 10.0;
-    if (steer_scale_ < 0.1) steer_scale_ = 0.1;
-    RCLCPP_INFO(get_logger(), "steer_scale = %.1f", steer_scale_);
+    RCLCPP_INFO(get_logger(), "steer_scale increased to: %.1f", steer_scale_);
   }
-  if (check_button_press(scale_dec, prev_scale_dec_pressed_)) {
-    steer_scale_ = std::max(steer_scale_ - 0.1, 0.0);
+  if (check_button_press(steer_scale_dec, prev_steer_scale_dec_pressed_)) {
+    steer_scale_ = std::max(steer_scale_ - 0.1, 0.0); // 0.0未満にならないように
     steer_scale_ = std::round(steer_scale_ * 10.0) / 10.0;
-    if (steer_scale_ < 0.1 && steer_scale_ != 0.0) steer_scale_ = 0.1;
-    RCLCPP_INFO(get_logger(), "steer_scale = %.1f", steer_scale_);
+    RCLCPP_INFO(get_logger(), "steer_scale decreased to: %.1f", steer_scale_);
+  }
+
+  // Speed Scale 調整 (上下)
+  if (check_button_press(speed_scale_inc, prev_speed_scale_inc_pressed_)) {
+    speed_scale_ = std::round((speed_scale_ + 0.1) * 10.0) / 10.0;
+    RCLCPP_INFO(get_logger(), "speed_scale increased to: %.1f", speed_scale_);
+  }
+  if (check_button_press(speed_scale_dec, prev_speed_scale_dec_pressed_)) {
+    speed_scale_ = std::max(speed_scale_ - 0.1, 0.0); // 0.0未満にならないように
+    speed_scale_ = std::round(speed_scale_ * 10.0) / 10.0;
+    RCLCPP_INFO(get_logger(), "speed_scale decreased to: %.1f", speed_scale_);
   }
 }
 
@@ -231,6 +225,7 @@ void TeleopManagerNode::timer_callback()
   }
 
   if (joy_active_) {
+    // joy_speed_ と joy_steer_ は joy_callback でスケール適用済みの値
     out.longitudinal.acceleration = joy_speed_;
     out.lateral.steering_tire_angle = joy_steer_;
     out.lateral.steering_tire_rotation_rate = 1.0;
@@ -238,6 +233,7 @@ void TeleopManagerNode::timer_callback()
     out = last_autonomy_msg_;
     out.lateral.steering_tire_rotation_rate = 0.5;
   } else {
+    // Stop
     out.longitudinal.acceleration = 0.0;
     out.lateral.steering_tire_angle = 0.0;
     out.lateral.steering_tire_rotation_rate = 0.0;
