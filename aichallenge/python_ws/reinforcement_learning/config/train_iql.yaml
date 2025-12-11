@@ -1,0 +1,35 @@
+dataset:
+  path: ./datasets_h5          # merged_sequence.h5 が並ぶルート
+  downsample_dim: 270
+  max_seq: null                # 例: 10 にすれば最初の10シーケンスだけ
+
+model:
+  hidden_dim: 256
+  action_dim: 2
+
+train:
+  batch_size: 256
+  num_workers: 4
+  lr: 3.0e-4
+  weight_decay: 0.0
+  epochs: 100
+  log_interval: 100
+  save_interval: 10
+  save_dir: ./ckpt/iql_lidar270
+
+algo:
+  gamma: 0.99
+  expectile_tau: 0.7
+  awbc_beta: 0.5
+  awbc_clip: 100.0
+  target_momentum: 0.995
+  target_update_interval: 1
+  # もし行動スケールを [-1,1] に合わせたい場合に使用
+  action_scale: 1.0
+  action_bias: 0.0
+
+reward:
+  # HDF5に /reward が無ければ、以下の簡易報酬で学習します
+  w_v: 1.0     # + 前進
+  w_s: 0.05    # - |steer|
+  w_a: 0.01    # - |accel|

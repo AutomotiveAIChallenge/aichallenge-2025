@@ -1,0 +1,16 @@
+dataset:
+  path: ./datasets/merged_sequence.h5
+  downsample_dim: 270     # LiDAR入力次元（1080/540/270）
+
+model:
+  hidden_dim: 256
+  action_dim: 2           # steer, accel
+
+train:
+  batch_size: 64
+  num_workers: 4
+  lr: 1.0e-4
+  weight_decay: 1.0e-5
+  epochs: 50
+  save_interval: 10
+  save_dir: ./ckpt/bc_lidar270
