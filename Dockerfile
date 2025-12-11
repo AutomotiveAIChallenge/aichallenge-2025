@@ -8,11 +8,23 @@ RUN apt-get update \
     && xargs -a /tmp/packages.txt apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        gnupg2 curl ca-certificates && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb -o /tmp/cuda-keyring.deb && \
+    dpkg -i /tmp/cuda-keyring.deb && \
+    rm /tmp/cuda-keyring.deb && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends cuda-toolkit-12-4 && \
+    rm -rf /var/lib/apt/lists/*
+  
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# PATH="$PATH:/root/.local/bin"
-# PATH="/usr/local/cuda/bin:$PATH"
+ENV LD_LIBRARY_PATH="/usr/local/cuda-12-4/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+ENV PATH="/usr/local/cuda-12-4/bin${PATH:+:${PATH}}"
+
 ENV XDG_RUNTIME_DIR=/tmp/xdg
 ENV ROS_LOCALHOST_ONLY=0
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
