@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="simulation"/>
+    <arg name="use_sim_time"/>
+    <arg name="run_rviz"/>
+    <arg name="sensor_model" default="racing_kart_sensor_kit"/>
+    <arg name="launch_vehicle_interface" default="true"/>
+
+    <arg name="csv_path" default="$(find-pkg-share original_launch)/map/lane.csv"/>
+
+    <let name="rviz_config" value="$(find-pkg-share original_launch)/rviz/autoware.rviz" if="$(var simulation)"/>
+    <arg name="rviz_config" default="$(var rviz_config_file)" description="rviz config"/>
+
+    <log message="The arguments for aichallenge_system_launch."/>
+    <log message=" - simulation: $(var simulation)"/>
+    <log message=" - use_sim_time: $(var use_sim_time)"/>
+    <log message=" - sensor_model: $(var sensor_model)"/>
+    <log message=" - launch_vehicle_interface: $(var launch_vehicle_interface)"/>
+    <log message=" - rviz config: $(var rviz_config)"/>
+
+    <!-- Main module of AI challenge 2025. -->
+    <include file="$(find-pkg-share original_launch)/launch/base_module.launch.xml" >
+        <arg name="vehicle_model" value="racing_kart"/>
+        <arg name="sensor_model" value="$(var sensor_model)"/>
+        <arg name="map_path" value="$(find-pkg-share original_launch)/map"/>
+        <arg name="use_sim_time" value="$(var use_sim_time)"/>
+        <arg name="simulation" value="$(var simulation)"/>
+        <arg name="launch_vehicle_interface" value="$(var launch_vehicle_interface)"/>
+    </include>
+
+    <include file="$(find-pkg-share original_launch)/launch/e2e_module.launch.xml" >
+        <arg name="use_sim_time" value="$(var use_sim_time)"/>
+        <arg name="csv_path" value="$(var csv_path)"/>
+    </include>
+
+    <!-- Visualization. -->
+    <group if="$(var run_rviz)">
+        <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" args="-d $(var rviz_config) -s $(find-pkg-share aichallenge_system_launch)/rviz/image/autoware.png"/>
+    </group>
+
+    <!-- Initial Pose -->
+    <node pkg="topic_tools" exec="relay" name="initial_pose_relay">
+      <param name="input_topic" value="/initialpose"/>
+      <param name="output_topic" value="/localization/initial_pose3d"/>
+    </node>
+
+    <node pkg="goal_pose_setter" exec="goal_pose_setter_node" name="goal_pose_setter" output="screen">
+        <param from="$(find-pkg-share goal_pose_setter)/config/default_goal_pose.param.yaml" />
+    </node>
+
+    <!-- Adapters for simulation. -->
+    <group if="$(var simulation)">
+        <include file="$(find-pkg-share aichallenge_system_launch)/launch/mode/awsim.launch.xml"/>
+    </group>
+
+    <!-- Adapters for real vehicle. -->
+    <group unless="$(var simulation)">
+        <include file="$(find-pkg-share aichallenge_system_launch)/launch/mode/real.launch.xml"/>
+    </group>
+</launch>
