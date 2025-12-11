@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <arg name="simulation"/>
-    <arg name="use_sim_time"/>
-    <arg name="run_rviz"/>
+    <arg name="simulation" default="true"/>
+    <arg name="use_sim_time" default="true"/>
+    <arg name="run_rviz" default="true"/>
     <arg name="sensor_model" default="racing_kart_sensor_kit"/>
     <arg name="launch_vehicle_interface" default="true"/>
 
