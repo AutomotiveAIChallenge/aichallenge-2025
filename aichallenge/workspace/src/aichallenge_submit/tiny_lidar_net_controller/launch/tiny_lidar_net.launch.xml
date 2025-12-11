@@ -8,7 +8,7 @@
 
   <!-- tiny_lidar_net_node -->
   <node pkg="tiny_lidar_net_controller" 
-        exec="tiny_lidar_net_controller_node"
+        exec="tiny_lidar_net_controller_node.py"
         name="tiny_lidar_net_controller_node"
         output="screen">
 

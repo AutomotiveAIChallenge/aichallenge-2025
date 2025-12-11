@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import time
 import numpy as np
 
@@ -7,7 +8,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import LaserScan
 from autoware_auto_control_msgs.msg import AckermannControlCommand
 
-from .tiny_lidar_net_controller_core import TinyLidarNetCore
+from tiny_lidar_net_controller.model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
 
 
 class TinyLidarNetNode(Node):
