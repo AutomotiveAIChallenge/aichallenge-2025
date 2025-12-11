@@ -116,6 +116,42 @@ class TinyLidarNetNode(Node):
 
         self.get_logger().info(f"Successfully loaded {count} parameters from {path}")
 
+    def pointcloud_callback(self, msg: PointCloud2):
+        """
+        Converts PointCloud2 (RobotecGPULidar) to LaserScan-like ranges and reuses the existing pipeline.
+        """
+        angles = []
+        distances = []
+        for x, y, z in pc2.read_points(msg, field_names=("x", "y", "z"), skip_nans=True):
+            dist = math.hypot(x, y)
+            if dist == 0.0:
+                continue
+            angles.append(math.atan2(y, x))
+            distances.append(dist)
+
+        if not distances:
+            self.get_logger().warn("PointCloud2 had no valid points; skipping inference.")
+            return
+
+        ordered = sorted(zip(angles, distances), key=lambda t: t[0])
+        angle_min = ordered[0][0]
+        angle_max = ordered[-1][0]
+        count = len(ordered)
+        angle_increment = (angle_max - angle_min) / (count - 1) if count > 1 else 0.0
+
+        scan_msg = LaserScan()
+        scan_msg.header = msg.header
+        scan_msg.angle_min = float(angle_min)
+        scan_msg.angle_max = float(angle_max)
+        scan_msg.angle_increment = float(angle_increment)
+        scan_msg.time_increment = 0.0
+        scan_msg.scan_time = 0.0
+        scan_msg.range_min = float(min(distances))
+        scan_msg.range_max = float(max(distances))
+        scan_msg.ranges = [d for _, d in ordered]
+
+        self.scan_callback(scan_msg)
+
     def scan_callback(self, msg: LaserScan):
         """
         Callback for LaserScan messages. 
