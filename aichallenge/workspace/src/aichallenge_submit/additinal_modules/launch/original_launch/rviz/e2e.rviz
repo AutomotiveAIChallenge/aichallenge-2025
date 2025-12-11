@@ -4,25 +4,19 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /System1
         - /System1/TF1/Frames1
         - /System1/Vehicle1/VelocityHistory1/Topic1
-        - /Map1
         - /Map1/Lanelet2VectorMap1
-        - /Sensing1
         - /Sensing1/GNSS1/PoseWithCovariance1
         - /Sensing1/GNSS1/PoseWithCovariance1/Covariance1
         - /Sensing1/GNSS1/PoseWithCovariance1/Covariance1/Position1
         - /Sensing1/GNSSLink1
-        - /Localization1
         - /Localization1/GNSS1
         - /Localization1/EKF1/PoseHistory1/Line1
         - /Localization1/EKF1/Odometry1/Shape1
-        - /Planning1
         - /Planning1/ScenarioPlanning1
         - /Planning1/ScenarioPlanning1/ScenarioTrajectory1/View Text Velocity1
         - /Planning1/ScenarioPlanning1/ScenarioTrajectory1/View Point1
-        - /Control1
         - /Control1/PointStamped1/Topic1
       Splitter Ratio: 0.5737704634666443
     Tree Height: 345
@@ -53,8 +47,6 @@ Visualization Manager:
             All Enabled: false
             base_link:
               Value: true
-            gnss_base_link:
-              Value: true
             gnss_link:
               Value: true
             imu_link:
@@ -74,16 +66,6 @@ Visualization Manager:
           Show Names: true
           Tree:
             map:
-              base_link:
-                sensor_kit_base_link:
-                  gnss_link:
-                    {}
-                  imu_link:
-                    {}
-                  laser:
-                    {}
-              gnss_base_link:
-                {}
               viewer:
                 {}
           Update Interval: 0.029999999329447746
@@ -599,6 +581,40 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 50
       Reference Frame: viewer
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: ""
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: ""
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.25
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /scan
+      Use Fixed Frame: true
+      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:

@@ -36,6 +36,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr               reset_publisher_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_publisher_;
   rclcpp::TimerBase::SharedPtr                                     timer_;
+  geometry_msgs::msg::PoseWithCovarianceStamped reset_pose_msg_;
 
   // Parameters
   double speed_scale_, steer_scale_;

@@ -20,6 +20,15 @@
     dpad_lr_axis_index:   6   # 左右 (axes[6])
     dpad_ud_axis_index:   7   # 上下 (axes[7])
 
+    reset_frame_id: "map"
+    reset_pos_x: 89665.98707570114
+    reset_pos_y: 43124.828494282236
+    reset_pos_z: 6.381048054097747
+    reset_ori_x: 0.0
+    reset_ori_y: 0.0
+    reset_ori_z: -0.9683930510846941
+    reset_ori_w: 0.24942914547196962
+
 ## button index (DualShock4) humble
 
 # 0: □

@@ -17,10 +17,8 @@ TeleopManagerNode::TeleopManagerNode()
   current_lap_(0.0f),
   prev_start_pressed_(false),
   prev_stop_pressed_(false),
-  // 古いデバウンスフラグを削除
   prev_awsim_button_pressed_(false),
   prev_reset_button_pressed_(false),
-  // スケール調整用の新しいデバウンスフラグを初期化
   prev_steer_scale_inc_pressed_(false),
   prev_steer_scale_dec_pressed_(false),
   prev_speed_scale_inc_pressed_(false),
@@ -42,6 +40,15 @@ TeleopManagerNode::TeleopManagerNode()
   declare_parameter<int>("dpad_lr_axis_index", 6); 
   declare_parameter<int>("dpad_ud_axis_index", 7); 
 
+  declare_parameter<std::string>("reset_frame_id", "map");
+  declare_parameter<double>("reset_pos_x", 89653.7);
+  declare_parameter<double>("reset_pos_y", 43122.5);
+  declare_parameter<double>("reset_pos_z", 0.0);
+  declare_parameter<double>("reset_ori_x", 0.0);
+  declare_parameter<double>("reset_ori_y", 0.0);
+  declare_parameter<double>("reset_ori_z", -0.971732);
+  declare_parameter<double>("reset_ori_w", 0.236088);
+
   get_parameter("speed_scale", speed_scale_);
   get_parameter("steer_scale", steer_scale_);
   get_parameter("joy_button_index", joy_button_index_);
@@ -54,6 +61,15 @@ TeleopManagerNode::TeleopManagerNode()
   get_parameter("joy_timeout_sec", joy_timeout_sec_);
   get_parameter("dpad_lr_axis_index", dpad_lr_axis_index_);
   get_parameter("dpad_ud_axis_index", dpad_ud_axis_index_);
+
+  get_parameter("reset_frame_id", reset_pose_msg_.header.frame_id);
+  get_parameter("reset_pos_x", reset_pose_msg_.pose.pose.position.x);
+  get_parameter("reset_pos_y", reset_pose_msg_.pose.pose.position.y);
+  get_parameter("reset_pos_z", reset_pose_msg_.pose.pose.position.z);
+  get_parameter("reset_ori_x", reset_pose_msg_.pose.pose.orientation.x);
+  get_parameter("reset_ori_y", reset_pose_msg_.pose.pose.orientation.y);
+  get_parameter("reset_ori_z", reset_pose_msg_.pose.pose.orientation.z);
+  get_parameter("reset_ori_w", reset_pose_msg_.pose.pose.orientation.w);
 
   last_autonomy_msg_.longitudinal.speed = 0.0;
   last_autonomy_msg_.lateral.steering_tire_angle = 0.0;
@@ -135,18 +151,9 @@ void TeleopManagerNode::joy_callback(const sensor_msgs::msg::Joy::SharedPtr msg)
     auto empty_msg = std::make_unique<std_msgs::msg::Empty>();
     reset_publisher_->publish(std::move(empty_msg));
     RCLCPP_INFO(get_logger(), "Published Empty message to /aichallenge/awsim/reset");
-
-    auto pose_msg = std::make_unique<geometry_msgs::msg::PoseWithCovarianceStamped>();
+    auto pose_msg = std::make_unique<geometry_msgs::msg::PoseWithCovarianceStamped>(reset_pose_msg_);
+  
     pose_msg->header.stamp = this->get_clock()->now();
-    pose_msg->header.frame_id = "map";
-    pose_msg->pose.pose.position.x = 89666.01577151686;
-    pose_msg->pose.pose.position.y = 43124.3307874416;
-    pose_msg->pose.pose.position.z = 0.0;
-    pose_msg->pose.pose.orientation.x = 0.0;
-    pose_msg->pose.pose.orientation.y = 0.0;
-    pose_msg->pose.pose.orientation.z = -0.9683930510846941;
-    pose_msg->pose.pose.orientation.w = 0.24942914547196962;
-
     initialpose_publisher_->publish(std::move(pose_msg));
     RCLCPP_INFO(get_logger(), "Published initial pose to /initialpose");
   }
