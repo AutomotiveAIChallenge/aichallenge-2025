@@ -232,3 +232,91 @@ class TinyLidarNetNp:
         x = tanh(linear(x, self.params['fc4_w'], self.params['fc4_b']))
         
         return x
+    
+class TinyLidarNetSmallNp:
+    """
+    LiDARデータ用の軽量版CNNモデル (NumPy版)
+    - Conv層: 3層
+    - FC層: 3層
+    """
+    def __init__(self, input_dim=1080, output_dim=2):
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        
+        # パラメータを辞書で管理
+        self.params = {}
+        
+        # --- 畳み込み層 (Convolutional Layers) ---
+        self.strides = {
+            'conv1': 4,
+            'conv2': 4,
+            'conv3': 2,
+        }
+        
+        # レイヤー形状の定義
+        self.shapes = {
+            'conv1_w': (24, 1, 10),  'conv1_b': (24,),
+            'conv2_w': (36, 24, 8), 'conv2_b': (36,),
+            'conv3_w': (48, 36, 4), 'conv3_b': (48,),
+        }
+
+        # --- 全結合層 (Fully Connected Layers) ---
+        # Conv層の出力サイズを動的に計算
+        flatten_dim = self._get_conv_output_dim()
+
+        self.shapes.update({
+            'fc1_w': (100, flatten_dim), 'fc1_b': (100,),
+            'fc2_w': (50, 100),       'fc2_b': (50,),
+            'fc3_w': (output_dim, 50), 'fc3_b': (output_dim,),
+        })
+
+        # 重みの初期化処理を呼び出し
+        self._initialize_weights()
+
+    def _get_conv_output_dim(self):
+        """Conv層の出力サイズを動的に計算"""
+        l = self.input_dim
+        
+        l = (l - self.shapes['conv1_w'][2]) // self.strides['conv1'] + 1
+        l = (l - self.shapes['conv2_w'][2]) // self.strides['conv2'] + 1
+        l = (l - self.shapes['conv3_w'][2]) // self.strides['conv3'] + 1
+        
+        # 最終チャンネル数 * 最終長
+        c = self.shapes['conv3_w'][0] 
+        
+        # (1, 48, 32) -> flatten -> 48 * 32 = 1536
+        return c * l
+
+    def _initialize_weights(self):
+        """モデルの重みをKaiming He初期化する"""
+        for name, shape in self.shapes.items():
+            if name.endswith('_w'): # 重み
+                if name.startswith('conv'):
+                    fan_out = shape[0] * shape[2]
+                else: # linear
+                    fan_out = shape[0]
+                
+                self.params[name] = kaiming_normal_init(shape, fan_out)
+                
+            elif name.endswith('_b'): # バイアス
+                self.params[name] = zeros_init(shape)
+
+    def __call__(self, x):
+        """順伝播 (PyTorchのforwardに相当)"""
+        
+        # Conv層 + ReLU
+        x = relu(conv1d(x, self.params['conv1_w'], self.params['conv1_b'], self.strides['conv1']))
+        x = relu(conv1d(x, self.params['conv2_w'], self.params['conv2_b'], self.strides['conv2']))
+        x = relu(conv1d(x, self.params['conv3_w'], self.params['conv3_b'], self.strides['conv3']))
+
+        # 平坦化 (Flatten)
+        x = flatten(x)
+        
+        # FC層 + ReLU
+        x = relu(linear(x, self.params['fc1_w'], self.params['fc1_b']))
+        x = relu(linear(x, self.params['fc2_w'], self.params['fc2_b']))
+        
+        # 出力層 + Tanh
+        x = tanh(linear(x, self.params['fc3_w'], self.params['fc3_b']))
+        
+        return x
