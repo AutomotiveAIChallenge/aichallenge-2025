@@ -13,9 +13,7 @@ MAX_RANGE = 30.0
 
 
 def clean_scan_array(scan_array: np.ndarray, max_range: float = MAX_RANGE) -> np.ndarray:
-    """
-    LiDARスキャン配列のinf/nanをクレンジング。
-    """
+    """LiDARスキャン配列のinf/nanをクレンジング。"""
     if not isinstance(scan_array, np.ndarray):
         scan_array = np.array(scan_array, dtype=np.float32)
 
@@ -24,7 +22,7 @@ def clean_scan_array(scan_array: np.ndarray, max_range: float = MAX_RANGE) -> np
     return cleaned.astype(np.float32)
 
 
-def extract_and_save_per_bag(bag_path, output_dir, cmd_topic, scan_topic):
+def extract_and_save_per_bag(bag_path, output_dir, cmd_topic, scan_topic, debug=False):
     pid = os.getpid()
     bag_path = Path(bag_path).expanduser().resolve()
     bag_name = bag_path.name
@@ -38,6 +36,9 @@ def extract_and_save_per_bag(bag_path, output_dir, cmd_topic, scan_topic):
         with AnyReader([bag_path]) as reader:
             topic_list = [cmd_topic, scan_topic]
             connections = [c for c in reader.connections if c.topic in topic_list]
+
+            if debug:
+                print(f"[DEBUG PID:{pid}] Reading {bag_name} with topics: {[c.topic for c in connections]}")
 
             for conn, timestamp, raw in reader.messages(connections=connections):
                 msg = reader.deserialize(raw, conn.msgtype)
@@ -67,18 +68,43 @@ def extract_and_save_per_bag(bag_path, output_dir, cmd_topic, scan_topic):
     cmd_data, cmd_times = np.array(cmd_data), np.array(cmd_times)
     scan_data, scan_times = np.array(scan_data), np.array(scan_times)
 
-    synced_scans, synced_steers, synced_accels = [], [], []
+    # --- 範囲チェック ---
+    if debug:
+        if scan_times[0] < cmd_times[0]:
+            diff = (cmd_times[0] - scan_times[0]) / 1e9
+            print(f"[PID:{pid} WARN] {bag_name}: first scan before first cmd ({diff:.3f}s)")
+        if scan_times[-1] > cmd_times[-1]:
+            diff = (scan_times[-1] - cmd_times[-1]) / 1e9
+            print(f"[PID:{pid} WARN] {bag_name}: last scan after last cmd ({diff:.3f}s)")
+
+    # --- 同期処理 ---
+    synced_scans, synced_steers, synced_accels, delta_times = [], [], [], []
     for i, base_time in enumerate(scan_times):
         idx_cmd = np.argmin(np.abs(cmd_times - base_time))
+        delta_t = abs(cmd_times[idx_cmd] - base_time)
+        delta_times.append(delta_t)
+
         steer, accel = cmd_data[idx_cmd]
         synced_steers.append(steer)
         synced_accels.append(accel)
         synced_scans.append(scan_data[i])
 
+    delta_times = np.array(delta_times) / 1e9  # 秒単位に換算
+
+    if debug:
+        print(
+            f"[PID:{pid} DEBUG] {bag_name}: Δt mean={delta_times.mean():.4f}s, "
+            f"max={delta_times.max():.4f}s, min={delta_times.min():.4f}s"
+        )
+
     # --- 保存 ---
     np.save(out_dir / 'scans.npy', np.array(synced_scans))
     np.save(out_dir / 'steers.npy', np.array(synced_steers))
     np.save(out_dir / 'accelerations.npy', np.array(synced_accels))
+
+    if debug:
+        np.save(out_dir / 'delta_times.npy', delta_times)
+        print(f"[PID:{pid} DEBUG] Saved delta_times.npy ({len(delta_times)} samples)")
 
     print(f'[PID:{pid} SAVE] {bag_name}: {len(scan_times)} samples saved to {out_dir}')
 
@@ -90,8 +116,10 @@ def main():
     group.add_argument('--seq_dirs', nargs='+', help='List of specific sequence directories to process (non-recursive)')
     parser.add_argument('--outdir', required=True, help='Output root directory')
     parser.add_argument('--workers', type=int, default=None, help='Number of parallel workers. (Default: CPU count - 1, max 8)')
+    parser.add_argument('--debug', action='store_true', help='Enable detailed synchronization debug output')
     args = parser.parse_args()
 
+    # --- rosbag directory 検索 ---
     bag_dirs = []
     if args.bags_dir:
         bags_dir_path = Path(args.bags_dir).expanduser().resolve()
@@ -110,8 +138,9 @@ def main():
         print("[ERROR] No valid rosbag directories to process.")
         return
 
-    tasks = [(bag_path, args.outdir, CONTROL_TOPIC, SCAN_TOPIC) for bag_path in sorted(bag_dirs)]
+    tasks = [(bag_path, args.outdir, CONTROL_TOPIC, SCAN_TOPIC, args.debug) for bag_path in sorted(bag_dirs)]
 
+    # --- 並列処理ワーカー数 ---
     if args.workers:
         num_workers = args.workers
     else:
