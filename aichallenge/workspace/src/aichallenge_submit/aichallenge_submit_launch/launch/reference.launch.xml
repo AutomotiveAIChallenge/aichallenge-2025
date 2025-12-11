@@ -32,6 +32,12 @@
     </node>
   </group>
 
+  <!-- E2E関連のパラメータ -->
+  <arg name="e2e" default="true"/>
+  <arg name="ckpt_path" default="$(find-pkg-share tiny_lidar_net_controller)/ckpt/tinylidarnet_weights.npy"/>
+  <arg name="model_type" default="tiny_lidar_net"/>
+  <arg name="csv_path" default="$(find-pkg-share laserscan_generator)/map/lane.csv"/>
+
   <!-- Sensing -->
   <group>
     <push-ros-namespace namespace="sensing"/>
@@ -126,21 +132,36 @@
   </group>
 
   <!-- Pure Pursuit -->
-  <let name="steering_tire_angle_gain_var" value="1.50" if="$(var simulation)"/>
-  <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/>
+  <group unless="$(var e2e)">
+    <let name="steering_tire_angle_gain_var" value="1.50" if="$(var simulation)"/>
+    <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/>
 
-  <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
-    <param name="use_external_target_vel" value="false"/>
-    <param name="external_target_vel" value="10.0"/>
-    <param name="lookahead_gain" value="0.5"/>
-    <param name="lookahead_min_distance" value="3.5"/>
-    <param name="speed_proportional_gain" value="1.0"/>
-    <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
+    <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
+      <param name="use_external_target_vel" value="false"/>
+      <param name="external_target_vel" value="10.0"/>
+      <param name="lookahead_gain" value="0.5"/>
+      <param name="lookahead_min_distance" value="3.5"/>
+      <param name="speed_proportional_gain" value="1.0"/>
+      <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
 
-    <remap from="input/kinematics" to="/localization/kinematic_state"/>
-    <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
-    <remap from="output/control_cmd" to="/control/command/control_cmd"/>
-  </node>
+      <remap from="input/kinematics" to="/localization/kinematic_state"/>
+      <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
+      <remap from="output/control_cmd" to="/control/command/control_cmd"/>
+    </node>
+  </group>
+
+  <!-- E2E Controller -->
+  <group if="$(var e2e)">
+      <include file="$(find-pkg-share laserscan_generator)/launch/laserscan_generator.launch.xml" >
+          <arg name="use_sim_time" value="$(var use_sim_time)"/>
+          <arg name="csv_path" value="$(var csv_path)"/>
+      </include>
+      <include file="$(find-pkg-share tiny_lidar_net_controller)/launch/tiny_lidar_net.launch.xml">
+          <arg name="ckpt_path" value="$(var ckpt_path)"/>
+          <arg name="model_type" value="$(var model_type)"/>
+          <arg name="control_cmd_topic" value="/control/command/control_cmd"/>
+      </include>
+  </group>
 
   <!-- Map -->
   <group>
