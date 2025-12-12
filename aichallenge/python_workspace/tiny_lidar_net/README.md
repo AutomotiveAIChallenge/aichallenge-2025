@@ -1,4 +1,4 @@
-# Python Workspace
+# TinyLiDARNet Workspace
 
 このworkspaceでは、[TinyLidarNet](https://arxiv.org/abs/2410.07447)用のデータ変換・学習・deployコードを提供しています。
 
