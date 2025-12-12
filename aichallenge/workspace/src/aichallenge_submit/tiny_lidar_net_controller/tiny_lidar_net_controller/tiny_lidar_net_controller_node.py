@@ -7,13 +7,14 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import LaserScan
 from autoware_auto_control_msgs.msg import AckermannControlCommand
 
-from .model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
+from .tiny_lidar_net_controller_core import TinyLidarNetCore
 
 
 class TinyLidarNetNode(Node):
-    """
-    ROS 2 node for autonomous driving control using TinyLidarNet (NumPy version).
-    Takes LaserScan data as input and outputs AckermannControlCommand.
+    """ROS 2 Node for TinyLidarNet autonomous driving control.
+
+    Subscribes to LaserScan messages and publishes AckermannControlCommand
+    based on the inference results from TinyLidarNetCore.
     """
 
     def __init__(self):
@@ -23,173 +24,100 @@ class TinyLidarNetNode(Node):
         self.declare_parameter('log_interval_sec', 5.0)
         self.declare_parameter('model.input_dim', 1080)
         self.declare_parameter('model.output_dim', 2)
-        self.declare_parameter('model.architecture', 'large')  # 'large' or 'small'
+        self.declare_parameter('model.architecture', 'large')
         self.declare_parameter('model.ckpt_path', '')
         self.declare_parameter('acceleration', 0.1)
-        self.declare_parameter('control_mode', 'ai')  # 'ai' or 'fixed'
-        self.declare_parameter('debug', False)        # True/False
+        self.declare_parameter('control_mode', 'ai')
+        self.declare_parameter('debug', False)
 
-        # --- Parameter Retrieval ---
-        self.log_interval = self.get_parameter('log_interval_sec').value
-        self.input_dim = self.get_parameter('model.input_dim').value
-        self.output_dim = self.get_parameter('model.output_dim').value
-        self.model_architecture = self.get_parameter('model.architecture').value
-        self.ckpt_path = self.get_parameter('model.ckpt_path').value
-        self.acceleration = self.get_parameter('acceleration').value
-        self.control_mode = self.get_parameter('control_mode').value.lower()
+        # --- Initialization ---
+        input_dim = self.get_parameter('model.input_dim').value
+        output_dim = self.get_parameter('model.output_dim').value
+        architecture = self.get_parameter('model.architecture').value
+        ckpt_path = self.get_parameter('model.ckpt_path').value
+        acceleration = self.get_parameter('acceleration').value
+        control_mode = self.get_parameter('control_mode').value
+        
         self.debug = self.get_parameter('debug').value
+        self.log_interval = self.get_parameter('log_interval_sec').value
 
-        # --- Model Initialization ---
-        if self.model_architecture == 'small':
-            self.model = TinyLidarNetSmallNp(input_dim=self.input_dim, output_dim=self.output_dim)
-        else:
-            self.model = TinyLidarNetNp(input_dim=self.input_dim, output_dim=self.output_dim)
+        try:
+            self.core = TinyLidarNetCore(
+                input_dim=input_dim,
+                output_dim=output_dim,
+                architecture=architecture,
+                ckpt_path=ckpt_path,
+                acceleration=acceleration,
+                control_mode=control_mode
+            )
+            self.get_logger().info(
+                f"Initialized TinyLidarNetCore. Arch: {architecture}, Mode: {control_mode}"
+            )
+        except Exception as e:
+            self.get_logger().error(f"Failed to initialize core logic: {e}")
+            raise e
 
-        # --- Load Weights ---
-        if self.ckpt_path:
-            try:
-                self.load_weights(self.ckpt_path)
-                self.get_logger().info(f"Loaded model weights from {self.ckpt_path}")
-            except Exception as e:
-                self.get_logger().error(f"Failed to load model weights: {e}")
-        else:
-            self.get_logger().warn("No weight file provided. Using randomly initialized weights.")
-
-        self.get_logger().info(
-            f"Model: {self.model_architecture} | Mode: {self.control_mode} | Debug: {self.debug}"
-        )
-
-        # --- Metrics & Subscribers ---
+        # --- Communication Setup ---
         self.inference_times = []
         self.last_log_time = self.get_clock().now()
 
-        # QoS configuration for sensor data (High throughput, keep latest)
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
 
-        self.create_subscription(LaserScan, "/scan", self.scan_callback, qos)
-        self.control_pub = self.create_publisher(AckermannControlCommand, "/awsim/control_cmd", 1)
+        self.sub_scan = self.create_subscription(
+            LaserScan, "/scan", self.scan_callback, qos
+        )
+        self.pub_control = self.create_publisher(
+            AckermannControlCommand, "/awsim/control_cmd", 1
+        )
 
-        self.get_logger().info("TinyLidarNetNode initialized.")
-
-    def load_weights(self, path: str):
-        """
-        Loads weights from a .npy or .npz file into the model parameters.
-        Handles dictionary key mapping (replacing '.' with '_').
-        """
-        weights = np.load(path, allow_pickle=True)
-        
-        # Normalize weight format to dict
-        if isinstance(weights, np.lib.npyio.NpzFile):
-            weights = dict(weights.items())
-        elif isinstance(weights, np.ndarray) and weights.dtype == object:
-            weights = weights.item()
-        elif isinstance(weights, dict):
-            pass
-        else:
-            raise ValueError(f"Unsupported weight format type: {type(weights)}")
-
-        count = 0
-        for key, value in weights.items():
-            # Normalize key to match model parameter naming convention
-            key_norm = key.replace('.', '_')
-            
-            if key_norm in self.model.params:
-                target_shape = self.model.params[key_norm].shape
-                if target_shape == value.shape:
-                    self.model.params[key_norm] = value
-                    count += 1
-                else:
-                    self.get_logger().warn(
-                        f"Shape mismatch for {key_norm}: expected {target_shape}, got {value.shape}"
-                    )
-            else:
-                self.get_logger().debug(f"Unused weight key: {key_norm}")
-
-        self.get_logger().info(f"Successfully loaded {count} parameters from {path}")
+        self.get_logger().info("TinyLidarNetNode is ready.")
 
     def scan_callback(self, msg: LaserScan):
-        """
-        Callback for LaserScan messages. 
-        Preprocesses data, runs inference, and publishes control commands.
-        """
+        """Callback for LaserScan subscription."""
         start_time = time.monotonic()
-        
-        # 1. Preprocess LiDAR data
+
+        # 1. Convert ROS message to Numpy
         ranges = np.array(msg.ranges, dtype=np.float32)
         ranges[np.isinf(ranges)] = msg.range_max
         ranges[np.isnan(ranges)] = 0.0
 
-        processed_ranges = self.process_ranges_for_model(ranges)
-        
-        # Prepare input tensor: (1, 1, input_dim)
-        x = np.expand_dims(np.expand_dims(processed_ranges, axis=0), axis=1)
+        # 2. Process via Core Logic
+        accel, steer = self.core.process(ranges)
 
-        # 2. Inference
-        outputs = self.model(x)[0]  # Expected output shape: (2,) -> [acceleration, steering]
-        
-        # 3. Process Control Command
-        if self.control_mode == "ai":
-            accel = float(np.clip(outputs[0], -1.0, 1.0))
-        else:
-            accel = self.acceleration
+        # 3. Publish Command
+        cmd = AckermannControlCommand()
+        cmd.stamp = self.get_clock().now().to_msg()
+        cmd.longitudinal.acceleration = float(accel)
+        cmd.lateral.steering_tire_angle = float(steer)
+        self.pub_control.publish(cmd)
 
-        steer = float(np.clip(outputs[1], -1.0, 1.0))
-
-        # 4. Measure Latency (only if debug is enabled to save resources)
+        # 4. Debug Logging
         if self.debug:
             duration_ms = (time.monotonic() - start_time) * 1000.0
             self.inference_times.append(duration_ms)
-
-        # 5. Publish Command
-        cmd = AckermannControlCommand()
-        cmd.stamp = self.get_clock().now().to_msg()
-        cmd.longitudinal.acceleration = accel
-        cmd.lateral.steering_tire_angle = steer
-        self.control_pub.publish(cmd)
-
-        # 6. Debug Logging
-        if self.debug:
-            self.get_logger().info(
-                f"[{self.control_mode.upper()}-{self.model_architecture}] accel={accel:.3f}, steer={steer:.3f}",
-                throttle_duration_sec=1.0
-            )
             self._log_performance_metrics()
 
-    def process_ranges_for_model(self, ranges: np.ndarray) -> np.ndarray:
-        """
-        Resizes and normalizes the LiDAR ranges to match the model's input dimension.
-        Normalization factor: 30.0 (Hardcoded max range assumption)
-        """
-        current_len = len(ranges)
-        
-        if current_len > self.input_dim:
-            idx = np.linspace(0, current_len - 1, self.input_dim, dtype=int)
-            ranges = ranges[idx]
-        elif current_len < self.input_dim:
-            ranges = np.pad(ranges, (0, self.input_dim - current_len), 'constant')
-            
-        return ranges / 30.0
-
     def _log_performance_metrics(self):
-        """Logs average inference time at specified intervals."""
+        """Logs internal performance metrics at fixed intervals."""
         now = self.get_clock().now()
-        
-        # Only log if enough time has passed
-        if (now - self.last_log_time).nanoseconds / 1e9 > self.log_interval:
+        elapsed_sec = (now - self.last_log_time).nanoseconds / 1e9
+
+        if elapsed_sec > self.log_interval:
             if self.inference_times:
-                avg = np.mean(self.inference_times)
+                avg_time = np.mean(self.inference_times)
                 max_time = np.max(self.inference_times)
-                fps = 1000.0 / avg if avg > 0 else 0.0
-                
+                fps = 1000.0 / avg_time if avg_time > 0 else 0.0
+
                 self.get_logger().info(
-                    f"DEBUG Stats: Avg {avg:.2f}ms ({fps:.2f}Hz), "
-                    f"Max {max_time:.2f}ms, Samples={len(self.inference_times)}"
+                    f"DEBUG: Avg Inference: {avg_time:.2f}ms ({fps:.2f}Hz) | "
+                    f"Max: {max_time:.2f}ms"
                 )
                 self.inference_times.clear()
+            
             self.last_log_time = now
 
 
