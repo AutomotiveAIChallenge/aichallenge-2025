@@ -9,15 +9,18 @@ class TinyLidarNetCore:
     """Core logic for the TinyLidarNet autonomous driving controller.
 
     This class manages the neural network model lifecycle, including initialization,
-    weight loading, input preprocessing, and inference execution.
+    weight loading, input preprocessing (cleaning, resizing, normalizing), and
+    inference execution. It is designed to be framework-agnostic.
 
     Attributes:
-        input_dim (int): Dimension of the input vector for the model.
+        input_dim (int): Dimension of the input vector expected by the model.
         output_dim (int): Dimension of the output vector (acceleration, steering).
         architecture (str): Model architecture type ('large' or 'small').
         acceleration (float): Fixed acceleration value used in 'fixed' control mode.
         control_mode (str): Control strategy ('ai' or 'fixed').
+        max_range (float): Maximum LiDAR range used for normalization and clipping.
         model (object): The instantiated neural network model.
+        logger (logging.Logger): Logger instance.
     """
 
     def __init__(
@@ -27,7 +30,8 @@ class TinyLidarNetCore:
         architecture: str = 'large',
         ckpt_path: str = '',
         acceleration: float = 0.1,
-        control_mode: str = 'ai'
+        control_mode: str = 'ai',
+        max_range: float = 30.0
     ):
         """Initializes the TinyLidarNetCore with specified parameters.
 
@@ -46,12 +50,16 @@ class TinyLidarNetCore:
                 'ai' uses model output for both acceleration and steering.
                 'fixed' uses the fixed acceleration value and model output for steering.
                 Defaults to 'ai'.
+            max_range (float, optional): The maximum range value for normalization.
+                Values exceeding this will be clipped, and infinity will be replaced
+                by this value. Defaults to 30.0.
         """
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.architecture = architecture
         self.acceleration = acceleration
         self.control_mode = control_mode.lower()
+        self.max_range = max_range
         self.logger = logging.getLogger(__name__)
 
         if self.architecture == 'small':
@@ -65,16 +73,19 @@ class TinyLidarNetCore:
             self.logger.warning("No weight file provided. Using randomly initialized weights.")
 
     def process(self, ranges: np.ndarray) -> Tuple[float, float]:
-        """Runs the inference pipeline on LiDAR data to generate control commands.
+        """Runs the complete inference pipeline on raw LiDAR data.
+
+        This method handles data cleaning (NaN/Inf removal), resizing, normalization,
+        and model inference.
 
         Args:
-            ranges (np.ndarray): A 1D numpy array containing LiDAR range data.
+            ranges (np.ndarray): A 1D numpy array containing raw LiDAR range data.
 
         Returns:
             Tuple[float, float]: A tuple containing (acceleration, steering_angle).
                 Values are clipped between -1.0 and 1.0.
         """
-        # 1. Preprocess
+        # 1. Preprocess (Clean -> Resize -> Normalize)
         processed_ranges = self._preprocess_ranges(ranges)
 
         # Prepare input tensor: (1, 1, input_dim)
@@ -117,7 +128,6 @@ class TinyLidarNetCore:
 
             loaded_count = 0
             for key, value in weight_dict.items():
-                # Normalize key to match model parameter naming convention
                 key_norm = key.replace('.', '_')
 
                 if key_norm in self.model.params:
@@ -131,21 +141,38 @@ class TinyLidarNetCore:
             raise e
 
     def _preprocess_ranges(self, ranges: np.ndarray) -> np.ndarray:
-        """Resizes and normalizes LiDAR ranges to match model input dimensions.
+        """Cleans, resizes, and normalizes LiDAR ranges.
+
+        This method performs the following operations:
+        1. Replaces NaNs with 0.0.
+        2. Replaces infinite values with `self.max_range`.
+        3. Clips all values to the range [0.0, `self.max_range`].
+        4. Resizes the array to match `self.input_dim` via interpolation or padding.
+        5. Normalizes the data by dividing by `self.max_range`.
 
         Args:
             ranges (np.ndarray): Source LiDAR range data.
 
         Returns:
             np.ndarray: Processed data array of shape (self.input_dim,).
-                Data is normalized by a factor of 30.0.
         """
-        current_len = len(ranges)
+        # Work on a copy to avoid side effects on the input array
+        ranges = ranges.copy()
+        
+        # Handle invalid values
+        ranges[np.isnan(ranges)] = 0.0
+        ranges[np.isinf(ranges)] = self.max_range
+        
+        # Clip to ensure data is within the expected range
+        ranges = np.clip(ranges, 0.0, self.max_range)
 
+        # Resize input if necessary
+        current_len = len(ranges)
         if current_len > self.input_dim:
             idx = np.linspace(0, current_len - 1, self.input_dim, dtype=int)
             ranges = ranges[idx]
         elif current_len < self.input_dim:
             ranges = np.pad(ranges, (0, self.input_dim - current_len), 'constant')
 
-        return ranges / 30.0
+        # Normalize
+        return ranges / self.max_range 

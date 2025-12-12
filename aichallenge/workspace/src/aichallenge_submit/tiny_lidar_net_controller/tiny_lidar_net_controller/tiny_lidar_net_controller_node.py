@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import time
 import numpy as np
 
@@ -8,14 +7,14 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import LaserScan
 from autoware_auto_control_msgs.msg import AckermannControlCommand
 
-from tiny_lidar_net_controller.model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
+from .core import TinyLidarNetCore
 
 
 class TinyLidarNetNode(Node):
     """ROS 2 Node for TinyLidarNet autonomous driving control.
 
-    Subscribes to LaserScan messages and publishes AckermannControlCommand
-    based on the inference results from TinyLidarNetCore.
+    This node subscribes to LaserScan messages, processes them using the
+    TinyLidarNetCore logic, and publishes AckermannControlCommand messages.
     """
 
     def __init__(self):
@@ -27,6 +26,7 @@ class TinyLidarNetNode(Node):
         self.declare_parameter('model.output_dim', 2)
         self.declare_parameter('model.architecture', 'large')
         self.declare_parameter('model.ckpt_path', '')
+        self.declare_parameter('max_range', 30.0)
         self.declare_parameter('acceleration', 0.1)
         self.declare_parameter('control_mode', 'ai')
         self.declare_parameter('debug', False)
@@ -36,6 +36,7 @@ class TinyLidarNetNode(Node):
         output_dim = self.get_parameter('model.output_dim').value
         architecture = self.get_parameter('model.architecture').value
         ckpt_path = self.get_parameter('model.ckpt_path').value
+        max_range = self.get_parameter('max_range').value
         acceleration = self.get_parameter('acceleration').value
         control_mode = self.get_parameter('control_mode').value
         
@@ -49,10 +50,11 @@ class TinyLidarNetNode(Node):
                 architecture=architecture,
                 ckpt_path=ckpt_path,
                 acceleration=acceleration,
-                control_mode=control_mode
+                control_mode=control_mode,
+                max_range=max_range
             )
             self.get_logger().info(
-                f"Initialized TinyLidarNetCore. Arch: {architecture}, Mode: {control_mode}"
+                f"Core initialized. Arch: {architecture}, MaxRange: {max_range}"
             )
         except Exception as e:
             self.get_logger().error(f"Failed to initialize core logic: {e}")
@@ -78,13 +80,18 @@ class TinyLidarNetNode(Node):
         self.get_logger().info("TinyLidarNetNode is ready.")
 
     def scan_callback(self, msg: LaserScan):
-        """Callback for LaserScan subscription."""
+        """Callback for LaserScan subscription.
+
+        Processes the scan data via the core logic and publishes a control command.
+
+        Args:
+            msg (LaserScan): The incoming ROS 2 LaserScan message.
+        """
         start_time = time.monotonic()
 
         # 1. Convert ROS message to Numpy
+        # We pass the raw array; the core logic handles NaN/Inf and normalization.
         ranges = np.array(msg.ranges, dtype=np.float32)
-        ranges[np.isinf(ranges)] = msg.range_max
-        ranges[np.isnan(ranges)] = 0.0
 
         # 2. Process via Core Logic
         accel, steer = self.core.process(ranges)
