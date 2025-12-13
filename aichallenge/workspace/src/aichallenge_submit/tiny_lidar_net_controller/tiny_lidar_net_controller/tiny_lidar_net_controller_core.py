@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from typing import Tuple
 
-from .model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
+from model.tinylidarnet import TinyLidarNetNp, TinyLidarNetSmallNp
 
 
 class TinyLidarNetCore:
