@@ -9,3 +9,4 @@ rosbag2*/
 *pem
 vehicle/.env
 metadata.yaml
+outputs/

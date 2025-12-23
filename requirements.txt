@@ -30,3 +30,4 @@ pycocotools
 grad-cam
 tensorboard
 tomli==2.3.0
+packaging>=22.0
